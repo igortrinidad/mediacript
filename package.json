@@ -1,0 +1,17 @@
+{
+  "name": "ffmpeg-simple-converter",
+  "version": "1.0.0",
+  "description": "CLI para converter vídeos/áudios com presets via ffmpeg",
+  "bin": {
+    "ffmpeg-simple-converter": "./convert.js"
+  },
+  "scripts": {
+    "convert": "node convert.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "inquirer": "^8.2.6"
+  }
+}

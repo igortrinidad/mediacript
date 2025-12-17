@@ -1,0 +1,15 @@
+.history
+node_modules
+*.mp4
+*.mp3
+*.ogg
+*.wav
+*.flac
+*.m4a
+*.avi
+*.mov
+*.wmv
+*.flv
+*.mkv
+*.webm
+*.vob
