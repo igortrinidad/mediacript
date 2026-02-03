@@ -10,7 +10,6 @@ dist/
 
 # IDE & History
 .history/
-.vscode/
 .idea/
 *.swp
 *.swo
