@@ -1,87 +1,240 @@
-# ffmpeg-simple-converter
+# FFmpeg Simple Converter
 
-A simple CLI to convert audio and video files using `ffmpeg`, featuring:
+Powerful and flexible CLI for converting videos/audio and AI transcription, working on Linux, Mac, and Windows.
 
-- file selector (checkbox)
-- ready-to-use presets (dynamic based on file type)
-- runs the command and streams output to the terminal
+## 🌟 Features
 
-## Requirements
+- ✅ **Cross-platform**: Works on Linux, macOS, and Windows
+- 🔄 **Multi-Step Workflow**: Combine multiple operations in a single flow
+- 🎙️ **AI Transcription**: Support for Groq (fast) and OpenAI Whisper
+- 💾 **State Management**: Saves progress of each workflow step
+- 🔑 **Persistent Configuration**: API keys saved locally and securely
+- 📊 **Visual Progress**: Track each step of the process
 
-- Node.js `>= 16`
-- `ffmpeg` installed and available in your `PATH`
+## 📋 Requirements
 
-Quick check:
+- **Node.js** `>= 16`
+- **FFmpeg** installed and available in PATH
 
-```sh
+### Installing FFmpeg
+
+#### Windows
+```bash
+# With Chocolatey
+choco install ffmpeg
+
+# With Scoop
+scoop install ffmpeg
+```
+
+#### macOS
+```bash
+brew install ffmpeg
+```
+
+#### Linux
+```bash
+# Ubuntu/Debian
+sudo apt update && sudo apt install ffmpeg
+
+# Fedora
+sudo dnf install ffmpeg
+
+# Arch Linux
+sudo pacman -S ffmpeg
+```
+
+Verify installation:
+```bash
 ffmpeg -version
 ```
 
-## Usage
+## 🚀 Installation
 
-### Via npx (from any folder)
-
-```sh
-npx ffmpeg-simple-converter
-```
-
-This opens a selector to pick files from the current folder and then choose the appropriate preset.
-
-### Run locally (in this repo)
-
-```sh
+```bash
 npm install
-npm run convert
 ```
 
-## Supported types
+## 💡 Usage
 
-The script only lists and allows selecting files with supported extensions.
+### Interactive Mode (Recommended)
 
-- Audio: `.ogg`, `.wav`, `.mp3`, `.m4a`, `.aac`, `.flac`
-- Video: `.mp4`, `.mov`, `.mkv`, `.webm`, `.avi`
-
-## Available presets
-
-Presets are built dynamically based on the detected type (audio or video). If you select mixed files (audio + video), the script will ask for one preset per type.
-
-### Audio → MP3 (good quality)
-
-```sh
-ffmpeg -hide_banner -n -i input.ogg -c:a libmp3lame -q:a 2 output.mp3
+```bash
+npm start
 ```
 
-### Audio → MP3 (smaller)
+The CLI will:
+1. ✅ Check if FFmpeg is installed
+2. 🔑 Request API keys on first run (optional)
+3. 📁 List media files in the current directory
+4. 🎯 Allow you to choose the desired workflow
 
-```sh
-ffmpeg -hide_banner -n -i input.ogg -c:a libmp3lame -q:a 5 output.mp3
+### Available Workflows
+
+#### For Videos 🎬
+- **Convert video + Extract audio + Transcribe**: Complete pipeline
+- **Extract audio from video + Transcribe**: To transcribe videos
+- **Only convert video**: Optimize video (H.264/AAC)
+- **Only extract audio from video**: Extract audio as MP3
+
+#### For Audio 🎵
+- **Convert audio + Transcribe**: Convert and transcribe
+- **Only transcribe audio**: Direct transcription
+- **Only convert audio**: Convert to MP3
+
+## 🔑 API Keys Configuration
+
+### First Run
+
+The first time you run it, you'll be asked if you want to configure your API keys:
+
+```
+⚠️  No API key found.
+? Do you want to configure your API keys now? (Y/n)
+
+🔑 Configure your API keys (optional - press Enter to skip)
+
+? Groq API Key (recommended - faster): sk-proj-...
+? OpenAI API Key: sk-...
 ```
 
-### Video → MP4 1080p (reasonable/smaller)
+### Where Keys Are Saved
 
-```sh
-ffmpeg -hide_banner -n -i input.mp4 \
-	-vf "scale='min(1080,iw)':-2" \
-	-c:v libx264 -profile:v baseline -level 3.1 \
-	-preset medium -crf 28 -r 30 \
-	-c:a aac -b:a 128k \
-	-movflags +faststart \
-	output.mp4
+- **Linux/Mac**: `~/.config/ffmpeg-simple-converter/config.json`
+- **Windows**: `%APPDATA%/ffmpeg-simple-converter/config.json`
+
+### Getting API Keys
+
+#### Groq (Recommended - Faster and Cheaper)
+1. Visit: https://console.groq.com
+2. Create a free account
+3. Generate an API key in "API Keys"
+
+#### OpenAI
+1. Visit: https://platform.openai.com
+2. Create an account
+3. Add credits
+4. Generate an API key in "API Keys"
+
+### Transcription Priority
+
+The system automatically tries in the following order:
+1. **Groq** (if configured) - faster and cheaper
+2. **OpenAI** (fallback) - if Groq fails or is not configured
+
+## 📊 Usage Example
+
+```bash
+$ npm start
+
+🎬 FFmpeg Simple Converter - Multi-Step Workflow
+
+✓ FFmpeg is installed (version: 6.0)
+
+📁 Found 3 media file(s)
+
+? Select file:
+  🎬 lecture_video.mp4
+❯ 🎵 podcast.mp3
+  🎬 presentation.mkv
+
+? Select what you want to do:
+❯ 🎬 Convert video + Extract audio + Transcribe
+  🎬 Extract audio from video + Transcribe
+  🎵 Convert audio + Transcribe
+  🎙️  Only transcribe audio
+
+🚀 Starting workflow: Convert video + Extract audio + Transcribe
+📁 Input file: lecture_video.mp4
+
+[1/3] Convert video...
+🎬 Converting video to optimized format...
+✓ Video converted: lecture_video_converted.mp4
+
+[2/3] Extract audio...
+🎵 Extracting audio from video...
+✓ Audio extracted: lecture_video_converted_audio.mp3
+
+[3/3] Transcribe audio...
+🎙️  Transcribing: lecture_video_converted_audio.mp3
+📡 Trying Groq Whisper (fast)...
+✓ Transcription completed with Groq
+✓ Transcription saved: lecture_video_converted_audio.txt
+
+📊 Workflow Progress:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ 1. Convert video (12.3s)
+✓ 2. Extract audio (3.1s)
+✓ 3. Transcribe audio (8.7s)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📦 Generated files:
+  • Video: lecture_video_converted.mp4
+  • Audio: lecture_video_converted_audio.mp3
+  • Transcription: lecture_video_converted_audio.txt
 ```
 
-### Video → MP4 1080p (better/larger)
+## 🗂️ Project Structure
 
-```sh
-ffmpeg -hide_banner -n -i input.mp4 \
-	-vf "scale='min(1080,iw)':-2" \
-	-c:v libx264 -profile:v baseline -level 3.1 \
-	-preset slow -crf 23 -r 30 \
-	-c:a aac -b:a 128k \
-	-movflags +faststart \
-	output.mp4
+```
+src/
+├── config/          # Configuration and API keys management
+├── transcript/      # Transcription modules (Groq and OpenAI)
+├── types/           # TypeScript definitions
+├── utils/           # Utilities (ffmpeg, files, etc)
+├── workflow/        # Workflow management system
+└── index.ts         # Main CLI
 ```
 
-## Notes
+## 🔧 Available Scripts
 
-- The script uses `-n` (do not overwrite). If the output name already exists, it generates an alternative name with a suffix.
-- If the output extension matches the input extension (e.g. `.mp3` → `.mp3`), the script uses a `_converted` suffix to avoid collisions.
+```bash
+npm start           # Run the interactive CLI
+npm run build       # Compile TypeScript to JavaScript
+npm run dev         # Development mode with watch
+npm run convert     # Run the old converter (convert.js)
+```
+
+## 📦 Supported Formats
+
+### Audio
+`.ogg`, `.wav`, `.mp3`, `.m4a`, `.aac`, `.flac`
+
+### Video
+`.mp4`, `.mov`, `.mkv`, `.webm`, `.avi`
+
+## 🛠️ State Management
+
+Each workflow saves its state to `.workflow-state.json` in the output directory:
+
+```json
+{
+  "steps": [
+    {
+      "id": "step-0",
+      "name": "Convert video",
+      "status": "completed",
+      "startTime": 1675436400000,
+      "endTime": 1675436412300
+    }
+  ],
+  "intermediateFiles": {
+    "convertedVideo": "video_converted.mp4",
+    "extractedAudio": "video_audio.mp3",
+    "transcriptionText": "video_audio.txt"
+  }
+}
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to open issues and pull requests.
+
+## 📄 License
+
+MIT
+
+## 🙏 Acknowledgments
+
+- FFmpeg for the amazing tool
+- OpenAI and Groq for transcription services

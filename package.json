@@ -1,11 +1,11 @@
 {
-  "name": "ffmpeg-simple-converter",
+  "name": "mediacript",
   "version": "1.0.0",
-  "description": "CLI para converter vídeos/áudios com presets via ffmpeg e transcrição de áudio",
+  "description": "CLI to convert media files to performat formats and extract text using Groq and OpenAI's Whisper API",
   "type": "module",
   "bin": {
-    "ffmpeg-converter": "./cli.mjs",
-    "ffmpeg-simple-converter": "./convert.js"
+    "mediacript": "./cli.mjs",
+    "mediacript-convert": "./convert.js"
   },
   "scripts": {
     "convert": "node convert.js",

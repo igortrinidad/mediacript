@@ -1,11 +1,45 @@
-.history
-node_modules
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment
+.env
+.env.local
+
+# IDE & History
+.history/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Workflow state
+.workflow-state.json
+
+# Output/converted files
+convertions/
+*.txt
+*_converted.*
+*_audio.*
+
+# Media files (test files)
 *.mp4
 *.mp3
 *.ogg
 *.wav
 *.flac
 *.m4a
+*.aac
 *.avi
 *.mov
 *.wmv
@@ -13,7 +47,3 @@ node_modules
 *.mkv
 *.webm
 *.vob
-
-*.env
-*.txt
-.workflow-state.json
