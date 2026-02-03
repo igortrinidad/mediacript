@@ -1,12 +1,18 @@
 {
   "name": "ffmpeg-simple-converter",
   "version": "1.0.0",
-  "description": "CLI para converter vídeos/áudios com presets via ffmpeg",
+  "description": "CLI para converter vídeos/áudios com presets via ffmpeg e transcrição de áudio",
+  "type": "module",
   "bin": {
+    "ffmpeg-converter": "./cli.mjs",
     "ffmpeg-simple-converter": "./convert.js"
   },
   "scripts": {
-    "convert": "node convert.js"
+    "convert": "node convert.js",
+    "start": "node --loader ts-node/esm src/index.ts",
+    "build": "tsc && chmod +x dist/index.js && chmod +x cli.mjs",
+    "dev": "node --loader ts-node/esm --watch src/index.ts",
+    "prepublishOnly": "npm run build"
   },
   "engines": {
     "node": ">=16"
@@ -15,9 +21,11 @@
     "axios": "^1.13.4",
     "dotenv": "^17.2.3",
     "form-data": "^4.0.5",
-    "inquirer": "^8.2.6"
+    "inquirer": "^8.2.6",
+    "openai": "^4.104.0"
   },
   "devDependencies": {
+    "@types/inquirer": "^8.2.12",
     "@types/node": "^25.0.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

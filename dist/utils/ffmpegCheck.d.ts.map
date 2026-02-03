@@ -1,0 +1,1 @@
+{"version":3,"file":"ffmpegCheck.d.ts","sourceRoot":"","sources":["../../src/utils/ffmpegCheck.ts"],"names":[],"mappings":"AAEA;;GAEG;AACH,wBAAgB,oBAAoB,IAAI;IAAE,SAAS,EAAE,OAAO,CAAC;IAAC,OAAO,CAAC,EAAE,MAAM,CAAC;IAAC,KAAK,CAAC,EAAE,MAAM,CAAA;CAAE,CAqB/F;AAED;;GAEG;AACH,wBAAgB,6BAA6B,IAAI,IAAI,CA8BpD;AAED;;;GAGG;AACH,wBAAgB,YAAY,IAAI,OAAO,CAUtC"}
