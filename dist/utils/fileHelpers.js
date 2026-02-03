@@ -3,7 +3,7 @@ import path from 'path';
 const AUDIO_EXTS = new Set(['.ogg', '.wav', '.mp3', '.m4a', '.aac', '.flac']);
 const VIDEO_EXTS = new Set(['.mp4', '.mov', '.mkv', '.webm', '.avi']);
 /**
- * Detecta o tipo de arquivo pela extensão
+ * Detects file type by extension
  */
 export function detectFileType(filePath) {
     const ext = path.extname(filePath).toLowerCase();
@@ -14,7 +14,7 @@ export function detectFileType(filePath) {
     return 'unknown';
 }
 /**
- * Lista arquivos de áudio/vídeo no diretório
+ * Lists audio/video files in directory
  */
 export function listMediaFiles(dir) {
     try {
@@ -41,12 +41,12 @@ export function listMediaFiles(dir) {
             .sort((a, b) => a.name.localeCompare(b.name));
     }
     catch (error) {
-        console.error('Erro ao listar arquivos:', error);
+        console.error('Error listing files:', error);
         return [];
     }
 }
 /**
- * Verifica se um arquivo existe
+ * Checks if a file exists
  */
 export function fileExists(filePath) {
     try {

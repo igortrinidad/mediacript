@@ -1,12 +1,26 @@
 {
   "name": "mediacript",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "CLI to convert media files to performat formats and extract text using Groq and OpenAI's Whisper API",
   "type": "module",
   "bin": {
     "mediacript": "./cli.mjs",
     "mediacript-convert": "./convert.js"
   },
+  "files": [
+    "dist",
+    "cli.mjs",
+    "convert.js",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/igortrinidad/mediacript.git"
+  },
+  "bugs": {
+    "url": "https://github.com/igortrinidad/mediacript/issues"
+  },
+  "homepage": "https://github.com/igortrinidad/mediacript#readme",
   "scripts": {
     "convert": "node convert.js",
     "start": "node --loader ts-node/esm src/index.ts",

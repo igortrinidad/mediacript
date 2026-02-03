@@ -1,22 +1,22 @@
 import { Config } from '../types/index.js';
 /**
- * Carrega a configuração salva
+ * Loads saved configuration
  */
 export declare function loadConfig(): Config;
 /**
- * Salva a configuração
+ * Saves configuration
  */
 export declare function saveConfig(config: Config): void;
 /**
- * Solicita as API keys ao usuário (interativo)
+ * Prompts user for API keys (interactive)
  */
 export declare function promptApiKeys(): Promise<Config>;
 /**
- * Verifica se há pelo menos uma API key configurada
+ * Checks if at least one API key is configured
  */
 export declare function hasApiKey(config: Config): boolean;
 /**
- * Obtém a configuração, solicitando ao usuário se necessário
+ * Gets configuration, prompting the user if necessary
  */
 export declare function ensureConfig(): Promise<Config>;
 //# sourceMappingURL=index.d.ts.map

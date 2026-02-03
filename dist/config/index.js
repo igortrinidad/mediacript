@@ -3,7 +3,7 @@ import path from 'path';
 import os from 'os';
 import inquirer from 'inquirer';
 /**
- * Retorna o diretório de configuração baseado no sistema operacional
+ * Returns the configuration directory based on the operating system
  * Linux/Mac: ~/.config/ffmpeg-simple-converter
  * Windows: %APPDATA%/ffmpeg-simple-converter
  */
@@ -23,7 +23,7 @@ function getConfigFilePath() {
     return path.join(getConfigDir(), 'config.json');
 }
 /**
- * Carrega a configuração salva
+ * Loads saved configuration
  */
 export function loadConfig() {
     try {
@@ -34,33 +34,33 @@ export function loadConfig() {
         }
     }
     catch (error) {
-        console.warn('Erro ao carregar configuração:', error);
+        console.warn('Error loading configuration:', error);
     }
     return {};
 }
 /**
- * Salva a configuração
+ * Saves configuration
  */
 export function saveConfig(config) {
     try {
         const configDir = getConfigDir();
         const configPath = getConfigFilePath();
-        // Cria o diretório se não existir
+        // Create directory if it doesn't exist
         if (!fs.existsSync(configDir)) {
             fs.mkdirSync(configDir, { recursive: true });
         }
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-        console.log(`✓ Configuração salva em: ${configPath}`);
+        console.log(`✓ Configuration saved in: ${configPath}`);
     }
     catch (error) {
-        console.error('Erro ao salvar configuração:', error);
+        console.error('Error saving configuration:', error);
     }
 }
 /**
- * Solicita as API keys ao usuário (interativo)
+ * Prompts user for API keys (interactive)
  */
 export async function promptApiKeys() {
-    console.log('\n🔑 Configure suas API keys (opcional - pressione Enter para pular)\n');
+    console.log('\n🔑 Configure your API keys (optional - press Enter to skip)\n');
     const answers = await inquirer.prompt([
         {
             type: 'input',
@@ -85,28 +85,57 @@ export async function promptApiKeys() {
     return config;
 }
 /**
- * Verifica se há pelo menos uma API key configurada
+ * Checks if at least one API key is configured
  */
 export function hasApiKey(config) {
     return !!(config.openaiApiKey || config.groqApiKey);
 }
 /**
- * Obtém a configuração, solicitando ao usuário se necessário
+ * Gets configuration, prompting the user if necessary
  */
 export async function ensureConfig() {
     let config = loadConfig();
-    // Se não tem nenhuma API key, pergunta ao usuário
+    // Display where API keys are being loaded from
+    const configPath = getConfigFilePath();
+    console.log(`\n🔑 API Keys Configuration`);
+    console.log(`ℹ️  Loading from: ${configPath}`);
+    // If no API keys are found
     if (!hasApiKey(config)) {
-        console.log('\n⚠️  Nenhuma API key encontrada.');
+        console.log('⚠️  No API keys found.');
         const { shouldConfigure } = await inquirer.prompt([
             {
                 type: 'confirm',
                 name: 'shouldConfigure',
-                message: 'Deseja configurar suas API keys agora?',
+                message: 'Would you like to configure your API keys now?',
                 default: true
             }
         ]);
         if (shouldConfigure) {
+            const newConfig = await promptApiKeys();
+            if (hasApiKey(newConfig)) {
+                config = { ...config, ...newConfig };
+                saveConfig(config);
+            }
+        }
+    }
+    else {
+        // Display current API keys status
+        console.log('✓ API Keys found:');
+        if (config.groqApiKey) {
+            console.log('  • Groq API Key: Configured');
+        }
+        if (config.openaiApiKey) {
+            console.log('  • OpenAI API Key: Configured');
+        }
+        const { updateKeys } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'updateKeys',
+                message: 'Would you like to update or add new API keys?',
+                default: false
+            }
+        ]);
+        if (updateKeys) {
             const newConfig = await promptApiKeys();
             if (hasApiKey(newConfig)) {
                 config = { ...config, ...newConfig };

@@ -1,13 +1,13 @@
 import { Config } from '../types/index.js';
 /**
- * Transcreve um arquivo de áudio tentando primeiro Groq, depois OpenAI
- * @param audioFilePath - Caminho do arquivo de áudio
- * @param config - Configuração com API keys
- * @returns Texto transcrito ou null
+ * Transcribes an audio file trying Groq first, then OpenAI
+ * @param audioFilePath - Audio file path
+ * @param config - Configuration with API keys
+ * @returns Transcribed text or null
  */
 export declare function transcribeAudio(audioFilePath: string, config: Config): Promise<string | null>;
 /**
- * Salva a transcrição em arquivo
+ * Saves transcription to file
  */
 export declare function saveTranscription(audioPath: string, transcription: string): string;
 //# sourceMappingURL=index.d.ts.map

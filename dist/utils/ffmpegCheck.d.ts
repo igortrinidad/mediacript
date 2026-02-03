@@ -1,5 +1,5 @@
 /**
- * Verifica se o ffmpeg está instalado e disponível no PATH
+ * Checks if ffmpeg is installed and available in PATH
  */
 export declare function checkFfmpegInstalled(): {
     installed: boolean;
@@ -7,12 +7,12 @@ export declare function checkFfmpegInstalled(): {
     error?: string;
 };
 /**
- * Exibe instruções de instalação do ffmpeg baseado no sistema operacional
+ * Displays ffmpeg installation instructions based on operating system
  */
 export declare function showFfmpegInstallInstructions(): void;
 /**
- * Verifica e informa sobre a instalação do ffmpeg
- * Retorna true se instalado, false caso contrário
+ * Checks and reports on ffmpeg installation
+ * Returns true if installed, false otherwise
  */
 export declare function verifyFfmpeg(): boolean;
 //# sourceMappingURL=ffmpegCheck.d.ts.map

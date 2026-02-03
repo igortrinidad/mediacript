@@ -1,4 +1,4 @@
-# FFmpeg Simple Converter
+# Mediacript
 
 Powerful and flexible CLI for converting videos/audio and AI transcription, working on Linux, Mac, and Windows.
 

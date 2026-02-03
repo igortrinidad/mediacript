@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 /**
- * Cria um novo workflow state
+ * Creates a new workflow state
  */
 export function createWorkflowState(inputFile, stepNames) {
     return {
@@ -16,7 +16,7 @@ export function createWorkflowState(inputFile, stepNames) {
     };
 }
 /**
- * Atualiza o status de um step
+ * Updates step status
  */
 export function updateStepStatus(state, stepIndex, status, result, error) {
     if (stepIndex >= 0 && stepIndex < state.steps.length) {
@@ -37,7 +37,7 @@ export function updateStepStatus(state, stepIndex, status, result, error) {
     }
 }
 /**
- * Obtém o step atual
+ * Gets current step
  */
 export function getCurrentStep(state) {
     if (state.currentStepIndex < state.steps.length) {
@@ -46,7 +46,7 @@ export function getCurrentStep(state) {
     return null;
 }
 /**
- * Avança para o próximo step
+ * Advances to next step
  */
 export function nextStep(state) {
     if (state.currentStepIndex < state.steps.length - 1) {
@@ -56,22 +56,22 @@ export function nextStep(state) {
     return false;
 }
 /**
- * Verifica se o workflow está completo
+ * Checks if workflow is complete
  */
 export function isWorkflowComplete(state) {
     return state.steps.every(step => step.status === 'completed' || step.status === 'skipped');
 }
 /**
- * Verifica se houve algum erro no workflow
+ * Checks if there were any workflow errors
  */
 export function hasWorkflowErrors(state) {
     return state.steps.some(step => step.status === 'failed');
 }
 /**
- * Exibe o progresso do workflow
+ * Displays workflow progress
  */
 export function printWorkflowProgress(state) {
-    console.log('\n📊 Progresso do Workflow:');
+    console.log('\n📊 Workflow Progress:');
     console.log('━'.repeat(50));
     state.steps.forEach((step, index) => {
         let icon = '⏳';
@@ -88,20 +88,20 @@ export function printWorkflowProgress(state) {
             : '';
         console.log(`${icon} ${index + 1}. ${step.name}${duration}`);
         if (step.error) {
-            console.log(`   └─ Erro: ${step.error}`);
+            console.log(`   └─ Error: ${step.error}`);
         }
     });
     console.log('━'.repeat(50));
 }
 /**
- * Salva o estado do workflow em arquivo
+ * Saves workflow state to file
  */
 export function saveWorkflowState(state, outputDir) {
     const stateFile = path.join(outputDir, '.workflow-state.json');
     fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
 }
 /**
- * Carrega o estado do workflow de arquivo
+ * Loads workflow state from file
  */
 export function loadWorkflowState(outputDir) {
     const stateFile = path.join(outputDir, '.workflow-state.json');
@@ -112,7 +112,7 @@ export function loadWorkflowState(outputDir) {
         }
     }
     catch (error) {
-        console.warn('Erro ao carregar estado do workflow:', error);
+        console.warn('Error loading workflow state:', error);
     }
     return null;
 }

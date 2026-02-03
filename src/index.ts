@@ -25,45 +25,45 @@ interface WorkflowOption {
 
 const WORKFLOW_OPTIONS: WorkflowOption[] = [
   {
-    name: '🎬 Converter vídeo + Extrair áudio + Transcrever',
+    name: '🎬 Convert video + Extract audio + Transcribe',
     value: 'video-full',
-    steps: ['Converter vídeo', 'Extrair áudio', 'Transcrever áudio'],
+    steps: ['Convert video', 'Extract audio', 'Transcribe audio'],
     requiresType: 'video'
   },
   {
-    name: '🎬 Extrair áudio do vídeo + Transcrever',
+    name: '🎬 Extract audio from video + Transcribe',
     value: 'video-extract-transcribe',
-    steps: ['Extrair áudio', 'Transcrever áudio'],
+    steps: ['Extract audio', 'Transcribe audio'],
     requiresType: 'video'
   },
   {
-    name: '🎵 Converter áudio + Transcrever',
+    name: '🎵 Convert audio + Transcribe',
     value: 'audio-convert-transcribe',
-    steps: ['Converter áudio', 'Transcrever áudio'],
+    steps: ['Convert audio', 'Transcribe audio'],
     requiresType: 'audio'
   },
   {
-    name: '🎙️  Apenas transcrever áudio',
+    name: '🎙️  Transcribe audio only',
     value: 'audio-transcribe',
-    steps: ['Transcrever áudio'],
+    steps: ['Transcribe audio'],
     requiresType: 'audio'
   },
   {
-    name: '🎬 Apenas converter vídeo',
+    name: '🎬 Convert video only',
     value: 'video-convert',
-    steps: ['Converter vídeo'],
+    steps: ['Convert video'],
     requiresType: 'video'
   },
   {
-    name: '🎵 Apenas converter áudio',
+    name: '🎵 Convert audio only',
     value: 'audio-convert',
-    steps: ['Converter áudio'],
+    steps: ['Convert audio'],
     requiresType: 'audio'
   },
   {
-    name: '🎵 Apenas extrair áudio do vídeo',
+    name: '🎵 Extract audio from video only',
     value: 'video-extract',
-    steps: ['Extrair áudio'],
+    steps: ['Extract audio'],
     requiresType: 'video'
   }
 ]
@@ -76,8 +76,8 @@ async function executeWorkflow(
   const state = createWorkflowState(inputFile, workflow.steps)
   const outputDir = path.dirname(inputFile)
 
-  console.log(`\n🚀 Iniciando workflow: ${workflow.name}`)
-  console.log(`📁 Arquivo de entrada: ${path.basename(inputFile)}\n`)
+  console.log(`\n🚀 Starting workflow: ${workflow.name}`)
+  console.log(`📁 Input file: ${path.basename(inputFile)}\n`)
 
   let currentFile = inputFile
   let audioFile: string | undefined
@@ -92,32 +92,32 @@ async function executeWorkflow(
 
     try {
       switch (step.name) {
-        case 'Converter vídeo':
+        case 'Convert video':
           currentFile = await convertVideo(currentFile, outputDir)
           state.intermediateFiles.convertedVideo = currentFile
           updateStepStatus(state, i, 'completed', { outputFile: currentFile })
           break
 
-        case 'Extrair áudio':
+        case 'Extract audio':
           audioFile = await extractAudio(currentFile, outputDir)
           state.intermediateFiles.extractedAudio = audioFile
           currentFile = audioFile
           updateStepStatus(state, i, 'completed', { outputFile: audioFile })
           break
 
-        case 'Converter áudio':
+        case 'Convert audio':
           audioFile = await convertAudio(currentFile, outputDir)
           currentFile = audioFile
           updateStepStatus(state, i, 'completed', { outputFile: audioFile })
           break
 
-        case 'Transcrever áudio':
+        case 'Transcribe audio':
           // Usa o arquivo de áudio atual ou o arquivo de entrada se for áudio
           const fileToTranscribe = audioFile || currentFile
           
-          // Verifica se há API key
+          // Check if API key is configured
           if (!hasApiKey(config)) {
-            console.log('\n⚠️  Pulando transcrição - nenhuma API key configurada')
+            console.log('\n⚠️  Skipping transcription - no API key configured')
             updateStepStatus(state, i, 'skipped')
             break
           }
@@ -130,38 +130,38 @@ async function executeWorkflow(
             console.log(`✓ Transcrição salva: ${path.basename(transcriptionFile)}`)
             updateStepStatus(state, i, 'completed', { outputFile: transcriptionFile })
           } else {
-            throw new Error('Falha ao transcrever áudio')
+            throw new Error('Failed to transcribe audio')
           }
           break
 
         default:
-          throw new Error(`Step desconhecido: ${step.name}`)
+          throw new Error(`Unknown step: ${step.name}`)
       }
 
       nextStep(state)
     } catch (error: any) {
-      console.error(`\n❌ Erro no step "${step.name}":`, error.message)
+      console.error(`\n❌ Error in step "${step.name}":`, error.message)
       updateStepStatus(state, i, 'failed', undefined, error.message)
       break
     }
   }
 
-  // Salva o estado final
+  // Save final state
   saveWorkflowState(state, outputDir)
 
-  // Exibe resumo
+  // Display summary
   printWorkflowProgress(state)
 
-  // Exibe arquivos gerados
-  console.log('\n📦 Arquivos gerados:')
+  // Display generated files
+  console.log('\n📦 Generated files:')
   if (state.intermediateFiles.convertedVideo) {
-    console.log(`  • Vídeo: ${path.basename(state.intermediateFiles.convertedVideo)}`)
+    console.log(`  • Video: ${path.basename(state.intermediateFiles.convertedVideo)}`)
   }
   if (state.intermediateFiles.extractedAudio) {
-    console.log(`  • Áudio: ${path.basename(state.intermediateFiles.extractedAudio)}`)
+    console.log(`  • Audio: ${path.basename(state.intermediateFiles.extractedAudio)}`)
   }
   if (state.intermediateFiles.transcriptionText) {
-    console.log(`  • Transcrição: ${path.basename(state.intermediateFiles.transcriptionText)}`)
+    console.log(`  • Transcription: ${path.basename(state.intermediateFiles.transcriptionText)}`)
   }
   console.log('')
 }
@@ -169,7 +169,7 @@ async function executeWorkflow(
 async function main() {
   console.log('🎬 FFmpeg Simple Converter - Workflow Multi-Step\n')
 
-  // Verifica o ffmpeg
+  // Check ffmpeg
   const ffmpegInstalled = verifyFfmpeg()
   if (!ffmpegInstalled) {
     process.exit(1)
@@ -177,29 +177,29 @@ async function main() {
 
   console.log('')
 
-  // Garante que há configuração (mesmo que sem API keys)
+  // Ensure configuration exists (even without API keys)
   const config = await ensureConfig()
 
-  // Lista arquivos
+  // List files
   const currentDir = process.cwd()
   const mediaFiles = listMediaFiles(currentDir)
 
   if (mediaFiles.length === 0) {
-    console.log('\n⚠️  Nenhum arquivo de mídia encontrado no diretório atual.')
-    console.log('Formatos suportados:')
-    console.log('  • Áudio: .ogg, .wav, .mp3, .m4a, .aac, .flac')
-    console.log('  • Vídeo: .mp4, .mov, .mkv, .webm, .avi\n')
+    console.log('\n⚠️  No media files found in current directory.')
+    console.log('Supported formats:')
+    console.log('  • Audio: .ogg, .wav, .mp3, .m4a, .aac, .flac')
+    console.log('  • Video: .mp4, .mov, .mkv, .webm, .avi\n')
     process.exit(0)
   }
 
-  console.log(`\n📁 Encontrados ${mediaFiles.length} arquivo(s) de mídia\n`)
+  console.log(`\n📁 Found ${mediaFiles.length} media file(s)\n`)
 
-  // Seleção do arquivo
+  // File selection
   const { selectedFile } = await inquirer.prompt([
     {
       type: 'list',
       name: 'selectedFile',
-      message: 'Selecione o arquivo:',
+      message: 'Select the file:',
       choices: mediaFiles.map((f) => ({
         name: `${f.type === 'video' ? '🎬' : '🎵'} ${f.name}`,
         value: f.fullPath
@@ -209,20 +209,20 @@ async function main() {
 
   const fileType = detectFileType(selectedFile)
 
-  // Filtra workflows compatíveis com o tipo de arquivo
+  // Filter workflows compatible with file type
   const availableWorkflows = WORKFLOW_OPTIONS.filter((w) => {
     if (w.requiresType === 'any') return true
     return w.requiresType === fileType
   })
 
-  // Marca workflows que requerem API key
+  // Mark workflows that require API key
   const workflowChoices = availableWorkflows.map((w) => {
-    const requiresTranscription = w.steps.some(s => s.includes('Transcrever'))
+    const requiresTranscription = w.steps.some(s => s.includes('Transcribe'))
     const hasKey = hasApiKey(config)
     
     let name = w.name
     if (requiresTranscription && !hasKey) {
-      name += ' ⚠️  (requer API key)'
+      name += ' ⚠️  (requires API key)'
     }
     
     return {
@@ -231,33 +231,33 @@ async function main() {
     }
   })
 
-  // Seleção do workflow
+  // Workflow selection
   const { selectedWorkflow } = await inquirer.prompt([
     {
       type: 'list',
       name: 'selectedWorkflow',
-      message: 'Selecione o que deseja fazer:',
+      message: 'Select what you want to do:',
       choices: workflowChoices
     }
   ])
 
   const workflow = availableWorkflows.find((w) => w.value === selectedWorkflow)
   if (!workflow) {
-    console.error('❌ Workflow inválido')
+    console.error('❌ Invalid workflow')
     process.exit(1)
   }
 
-  // Aviso se workflow requer transcrição mas não há API key
-  const requiresTranscription = workflow.steps.some(s => s.includes('Transcrever'))
+  // Warning if workflow requires transcription but no API key
+  const requiresTranscription = workflow.steps.some(s => s.includes('Transcribe'))
   if (requiresTranscription && !hasApiKey(config)) {
-    console.log('\n⚠️  Este workflow inclui transcrição, mas nenhuma API key está configurada.')
-    console.log('A transcrição será pulada. Configure uma API key para habilitar transcrição.\n')
+    console.log('\n⚠️  This workflow includes transcription, but no API key is configured.')
+    console.log('Transcription will be skipped. Configure an API key to enable transcription.\n')
     
     const { confirm } = await inquirer.prompt([
       {
         type: 'confirm',
         name: 'confirm',
-        message: 'Continuar mesmo assim?',
+        message: 'Continue anyway?',
         default: true
       }
     ])
@@ -267,12 +267,12 @@ async function main() {
     }
   }
 
-  // Executa o workflow
+  // Execute workflow
   await executeWorkflow(workflow, selectedFile, config)
 }
 
-// Executa
+// Execute
 main().catch((error) => {
-  console.error('\n❌ Erro:', error.message)
+  console.error('\n❌ Error:', error.message)
   process.exit(1)
 })

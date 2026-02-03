@@ -3,7 +3,7 @@ import path from 'path'
 import fs from 'fs'
 
 /**
- * Gera um caminho único para o arquivo de saída
+ * Generates unique output file path
  */
 export function uniqueOutputPath(dir: string, baseName: string, extWithDot: string): string {
   let candidate = path.join(dir, `${baseName}${extWithDot}`)
@@ -14,11 +14,11 @@ export function uniqueOutputPath(dir: string, baseName: string, extWithDot: stri
     if (!fs.existsSync(candidate)) return candidate
   }
 
-  throw new Error('Não foi possível gerar um nome de saída único.')
+  throw new Error('Could not generate a unique output name.')
 }
 
 /**
- * Executa um comando ffmpeg
+ * Executes an ffmpeg command
  */
 export function runFfmpegCommand(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -35,11 +35,11 @@ export function runFfmpegCommand(args: string[]): Promise<string> {
 
     ffmpeg.stderr.on('data', (data) => {
       stderr += data.toString()
-      // FFmpeg envia progresso para stderr
+      // FFmpeg sends progress to stderr
       const lines = stderr.split('\n')
       const lastLine = lines[lines.length - 2] || ''
       
-      // Exibe progresso se tiver informação de tempo
+      // Display progress if there is time information
       if (lastLine.includes('time=')) {
         process.stdout.write(`\r${lastLine.trim()}`)
       }
@@ -50,7 +50,7 @@ export function runFfmpegCommand(args: string[]): Promise<string> {
       if (code === 0) {
         resolve(stdout)
       } else {
-        reject(new Error(`FFmpeg falhou com código ${code}\n${stderr}`))
+        reject(new Error(`FFmpeg failed with code ${code}\n${stderr}`))
       }
     })
 
@@ -61,7 +61,7 @@ export function runFfmpegCommand(args: string[]): Promise<string> {
 }
 
 /**
- * Converte vídeo para formato performático (H.264/AAC)
+ * Converts video to performant format (H.264/AAC)
  */
 export async function convertVideo(
   inputPath: string,
@@ -71,7 +71,7 @@ export async function convertVideo(
   const baseName = path.basename(inputPath, path.extname(inputPath))
   const outputPath = uniqueOutputPath(dir, `${baseName}_converted`, '.mp4')
 
-  console.log(`\n🎬 Convertendo vídeo para formato performático...`)
+  console.log(`\n🎬 Converting video to performant format...`)
 
   const args = [
     '-i', inputPath,
@@ -86,12 +86,12 @@ export async function convertVideo(
   ]
 
   await runFfmpegCommand(args)
-  console.log(`\n✓ Vídeo convertido: ${path.basename(outputPath)}`)
+  console.log(`\n✓ Video converted: ${path.basename(outputPath)}`)
   return outputPath
 }
 
 /**
- * Extrai áudio de um vídeo
+ * Extracts audio from a video
  */
 export async function extractAudio(
   inputPath: string,
@@ -101,7 +101,7 @@ export async function extractAudio(
   const baseName = path.basename(inputPath, path.extname(inputPath))
   const outputPath = uniqueOutputPath(dir, `${baseName}_audio`, '.mp3')
 
-  console.log(`\n🎵 Extraindo áudio do vídeo...`)
+  console.log(`\n🎵 Extracting audio from video...`)
 
   const args = [
     '-i', inputPath,
@@ -113,12 +113,12 @@ export async function extractAudio(
   ]
 
   await runFfmpegCommand(args)
-  console.log(`\n✓ Áudio extraído: ${path.basename(outputPath)}`)
+  console.log(`\n✓ Audio extracted: ${path.basename(outputPath)}`)
   return outputPath
 }
 
 /**
- * Converte áudio para formato performático
+ * Converts audio to performant format
  */
 export async function convertAudio(
   inputPath: string,
@@ -128,7 +128,7 @@ export async function convertAudio(
   const baseName = path.basename(inputPath, path.extname(inputPath))
   const outputPath = uniqueOutputPath(dir, `${baseName}_converted`, '.mp3')
 
-  console.log(`\n🎵 Convertendo áudio para MP3...`)
+  console.log(`\n🎵 Converting audio to MP3...`)
 
   const args = [
     '-i', inputPath,
@@ -139,6 +139,6 @@ export async function convertAudio(
   ]
 
   await runFfmpegCommand(args)
-  console.log(`\n✓ Áudio convertido: ${path.basename(outputPath)}`)
+  console.log(`\n✓ Audio converted: ${path.basename(outputPath)}`)
   return outputPath
 }

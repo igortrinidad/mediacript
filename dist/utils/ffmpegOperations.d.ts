@@ -1,21 +1,21 @@
 /**
- * Gera um caminho único para o arquivo de saída
+ * Generates unique output file path
  */
 export declare function uniqueOutputPath(dir: string, baseName: string, extWithDot: string): string;
 /**
- * Executa um comando ffmpeg
+ * Executes an ffmpeg command
  */
 export declare function runFfmpegCommand(args: string[]): Promise<string>;
 /**
- * Converte vídeo para formato performático (H.264/AAC)
+ * Converts video to performant format (H.264/AAC)
  */
 export declare function convertVideo(inputPath: string, outputDir?: string): Promise<string>;
 /**
- * Extrai áudio de um vídeo
+ * Extracts audio from a video
  */
 export declare function extractAudio(inputPath: string, outputDir?: string): Promise<string>;
 /**
- * Converte áudio para formato performático
+ * Converts audio to performant format
  */
 export declare function convertAudio(inputPath: string, outputDir?: string): Promise<string>;
 //# sourceMappingURL=ffmpegOperations.d.ts.map

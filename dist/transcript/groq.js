@@ -2,15 +2,15 @@ import FormData from 'form-data';
 import fs from 'fs';
 import axios from 'axios';
 /**
- * Transcreve um arquivo de áudio usando Groq Whisper
+ * Transcribes an audio file using Groq Whisper
  * https://console.groq.com/docs/speech-to-text
- * @param audioLocalFilePath - Caminho local do arquivo de áudio
- * @param apiKey - API Key do Groq
- * @returns Texto transcrito ou null em caso de erro
+ * @param audioLocalFilePath - Local audio file path
+ * @param apiKey - Groq API Key
+ * @returns Transcribed text or null in case of error
  */
 export const groqTranscriptAudio = async (audioLocalFilePath, apiKey) => {
     if (!apiKey) {
-        console.error('❌ Groq API Key não fornecida');
+        console.error('❌ Groq API Key not provided');
         return null;
     }
     try {
@@ -31,7 +31,7 @@ export const groqTranscriptAudio = async (audioLocalFilePath, apiKey) => {
         return data?.text?.trim() || null;
     }
     catch (error) {
-        console.error('Erro ao transcrever áudio com Groq:', error.response?.data || error.message);
+        console.error('Error transcribing audio with Groq:', error.response?.data || error.message);
         return null;
     }
 };

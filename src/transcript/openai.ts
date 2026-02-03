@@ -2,10 +2,10 @@ import fs from 'fs'
 import OpenAI from 'openai'
 
 /**
- * Transcreve um arquivo de áudio usando OpenAI Whisper
- * @param audioLocalFilePath - Caminho local do arquivo de áudio
- * @param apiKey - API Key da OpenAI
- * @returns Texto transcrito ou null em caso de erro
+ * Transcribes an audio file using OpenAI Whisper
+ * @param audioLocalFilePath - Local audio file path
+ * @param apiKey - OpenAI API Key
+ * @returns Transcribed text or null in case of error
  */
 export const openaiTranscriptAudio = async (
   audioLocalFilePath: string,
@@ -13,7 +13,7 @@ export const openaiTranscriptAudio = async (
 ): Promise<string | null> => {
   
   if (!apiKey) {
-    console.error('❌ OpenAI API Key não fornecida')
+    console.error('❌ OpenAI API Key not provided')
     return null
   }
 
@@ -28,7 +28,7 @@ export const openaiTranscriptAudio = async (
     return transcription.text ?? null
 
   } catch (error: any) {
-    console.error('Erro ao transcrever áudio com OpenAI:', error.response?.data || error.message)
+    console.error('Error transcribing audio with OpenAI:', error.response?.data || error.message)
     return null
   }
 }

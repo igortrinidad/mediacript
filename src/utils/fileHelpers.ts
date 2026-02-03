@@ -7,7 +7,7 @@ const VIDEO_EXTS = new Set(['.mp4', '.mov', '.mkv', '.webm', '.avi'])
 export type FileType = 'audio' | 'video' | 'unknown'
 
 /**
- * Detecta o tipo de arquivo pela extensão
+ * Detects file type by extension
  */
 export function detectFileType(filePath: string): FileType {
   const ext = path.extname(filePath).toLowerCase()
@@ -18,7 +18,7 @@ export function detectFileType(filePath: string): FileType {
 }
 
 /**
- * Lista arquivos de áudio/vídeo no diretório
+ * Lists audio/video files in directory
  */
 export function listMediaFiles(dir: string): Array<{ name: string; fullPath: string; type: FileType }> {
   try {
@@ -43,13 +43,13 @@ export function listMediaFiles(dir: string): Array<{ name: string; fullPath: str
       .filter((f) => f.type !== 'unknown')
       .sort((a, b) => a.name.localeCompare(b.name))
   } catch (error) {
-    console.error('Erro ao listar arquivos:', error)
+    console.error('Error listing files:', error)
     return []
   }
 }
 
 /**
- * Verifica se um arquivo existe
+ * Checks if a file exists
  */
 export function fileExists(filePath: string): boolean {
   try {

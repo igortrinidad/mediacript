@@ -3,7 +3,7 @@ import path from 'path'
 import { WorkflowState, WorkflowStep } from '../types/index.js'
 
 /**
- * Cria um novo workflow state
+ * Creates a new workflow state
  */
 export function createWorkflowState(inputFile: string, stepNames: string[]): WorkflowState {
   return {
@@ -19,7 +19,7 @@ export function createWorkflowState(inputFile: string, stepNames: string[]): Wor
 }
 
 /**
- * Atualiza o status de um step
+ * Updates step status
  */
 export function updateStepStatus(
   state: WorkflowState,
@@ -49,7 +49,7 @@ export function updateStepStatus(
 }
 
 /**
- * Obtém o step atual
+ * Gets current step
  */
 export function getCurrentStep(state: WorkflowState): WorkflowStep | null {
   if (state.currentStepIndex < state.steps.length) {
@@ -59,7 +59,7 @@ export function getCurrentStep(state: WorkflowState): WorkflowStep | null {
 }
 
 /**
- * Avança para o próximo step
+ * Advances to next step
  */
 export function nextStep(state: WorkflowState): boolean {
   if (state.currentStepIndex < state.steps.length - 1) {
@@ -70,7 +70,7 @@ export function nextStep(state: WorkflowState): boolean {
 }
 
 /**
- * Verifica se o workflow está completo
+ * Checks if workflow is complete
  */
 export function isWorkflowComplete(state: WorkflowState): boolean {
   return state.steps.every(step => 
@@ -79,17 +79,17 @@ export function isWorkflowComplete(state: WorkflowState): boolean {
 }
 
 /**
- * Verifica se houve algum erro no workflow
+ * Checks if there were any workflow errors
  */
 export function hasWorkflowErrors(state: WorkflowState): boolean {
   return state.steps.some(step => step.status === 'failed')
 }
 
 /**
- * Exibe o progresso do workflow
+ * Displays workflow progress
  */
 export function printWorkflowProgress(state: WorkflowState): void {
-  console.log('\n📊 Progresso do Workflow:')
+  console.log('\n📊 Workflow Progress:')
   console.log('━'.repeat(50))
   
   state.steps.forEach((step, index) => {
@@ -106,7 +106,7 @@ export function printWorkflowProgress(state: WorkflowState): void {
     console.log(`${icon} ${index + 1}. ${step.name}${duration}`)
     
     if (step.error) {
-      console.log(`   └─ Erro: ${step.error}`)
+      console.log(`   └─ Error: ${step.error}`)
     }
   })
   
@@ -114,7 +114,7 @@ export function printWorkflowProgress(state: WorkflowState): void {
 }
 
 /**
- * Salva o estado do workflow em arquivo
+ * Saves workflow state to file
  */
 export function saveWorkflowState(state: WorkflowState, outputDir: string): void {
   const stateFile = path.join(outputDir, '.workflow-state.json')
@@ -122,7 +122,7 @@ export function saveWorkflowState(state: WorkflowState, outputDir: string): void
 }
 
 /**
- * Carrega o estado do workflow de arquivo
+ * Loads workflow state from file
  */
 export function loadWorkflowState(outputDir: string): WorkflowState | null {
   const stateFile = path.join(outputDir, '.workflow-state.json')
@@ -133,7 +133,7 @@ export function loadWorkflowState(outputDir: string): WorkflowState | null {
       return JSON.parse(data)
     }
   } catch (error) {
-    console.warn('Erro ao carregar estado do workflow:', error)
+    console.warn('Error loading workflow state:', error)
   }
   
   return null

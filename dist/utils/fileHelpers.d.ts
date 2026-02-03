@@ -1,10 +1,10 @@
 export type FileType = 'audio' | 'video' | 'unknown';
 /**
- * Detecta o tipo de arquivo pela extensão
+ * Detects file type by extension
  */
 export declare function detectFileType(filePath: string): FileType;
 /**
- * Lista arquivos de áudio/vídeo no diretório
+ * Lists audio/video files in directory
  */
 export declare function listMediaFiles(dir: string): Array<{
     name: string;
@@ -12,7 +12,7 @@ export declare function listMediaFiles(dir: string): Array<{
     type: FileType;
 }>;
 /**
- * Verifica se um arquivo existe
+ * Checks if a file exists
  */
 export declare function fileExists(filePath: string): boolean;
 //# sourceMappingURL=fileHelpers.d.ts.map
