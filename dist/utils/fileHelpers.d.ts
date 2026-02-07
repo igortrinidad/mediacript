@@ -15,4 +15,12 @@ export declare function listMediaFiles(dir: string): Array<{
  * Checks if a file exists
  */
 export declare function fileExists(filePath: string): boolean;
+/**
+ * Gets file size in bytes
+ */
+export declare function getFileSize(filePath: string): number;
+/**
+ * Converts bytes to MB
+ */
+export declare function bytesToMB(bytes: number): number;
 //# sourceMappingURL=fileHelpers.d.ts.map

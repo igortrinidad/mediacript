@@ -56,4 +56,23 @@ export function fileExists(filePath) {
         return false;
     }
 }
+/**
+ * Gets file size in bytes
+ */
+export function getFileSize(filePath) {
+    try {
+        const stats = fs.statSync(filePath);
+        return stats.size;
+    }
+    catch (error) {
+        console.error('Error getting file size:', error);
+        return 0;
+    }
+}
+/**
+ * Converts bytes to MB
+ */
+export function bytesToMB(bytes) {
+    return bytes / (1024 * 1024);
+}
 //# sourceMappingURL=fileHelpers.js.map

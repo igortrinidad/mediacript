@@ -114,4 +114,84 @@ export async function convertAudio(inputPath, outputDir) {
     console.log(`\n✓ Audio converted: ${path.basename(outputPath)}`);
     return outputPath;
 }
+/**
+ * Gets the duration of an audio file in seconds
+ */
+export async function getAudioDuration(inputPath) {
+    return new Promise((resolve, reject) => {
+        const ffprobe = spawn('ffprobe', [
+            '-v', 'error',
+            '-show_entries', 'format=duration',
+            '-of', 'default=noprint_wrappers=1:nokey=1',
+            inputPath
+        ]);
+        let output = '';
+        ffprobe.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+        ffprobe.on('close', (code) => {
+            if (code === 0) {
+                const duration = parseFloat(output.trim());
+                resolve(duration);
+            }
+            else {
+                reject(new Error(`Failed to get audio duration, code ${code}`));
+            }
+        });
+        ffprobe.on('error', (err) => {
+            reject(err);
+        });
+    });
+}
+/**
+ * Splits an audio file into chunks of specified size (in MB)
+ * Returns an array of chunk file paths
+ */
+export async function splitAudioIntoChunks(inputPath, maxSizeMB = 10) {
+    const dir = path.dirname(inputPath);
+    const baseName = path.basename(inputPath, path.extname(inputPath));
+    const ext = path.extname(inputPath);
+    // Create temp directory for chunks
+    const tempDir = path.join(dir, `${baseName}_chunks_temp`);
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+    }
+    console.log(`\n✂️  Splitting audio into chunks of max ${maxSizeMB}MB...`);
+    // Get total duration
+    const totalDuration = await getAudioDuration(inputPath);
+    // Get file size
+    const stats = fs.statSync(inputPath);
+    const fileSizeMB = stats.size / (1024 * 1024);
+    // Calculate approximate chunk duration to stay under maxSizeMB
+    // We use 90% of target size to have a safety margin
+    const targetSizeMB = maxSizeMB * 0.9;
+    const chunkDuration = Math.floor((totalDuration * targetSizeMB) / fileSizeMB);
+    console.log(`📊 Total duration: ${Math.round(totalDuration)}s, splitting into ~${Math.ceil(totalDuration / chunkDuration)} chunks`);
+    // Output pattern for chunks
+    const outputPattern = path.join(tempDir, `chunk_%03d${ext}`);
+    const args = [
+        '-i', inputPath,
+        '-f', 'segment',
+        '-segment_time', chunkDuration.toString(),
+        '-c', 'copy',
+        '-reset_timestamps', '1',
+        outputPattern
+    ];
+    await runFfmpegCommand(args);
+    // Get all chunk files
+    const chunkFiles = fs.readdirSync(tempDir)
+        .filter(f => f.startsWith('chunk_') && f.endsWith(ext))
+        .sort()
+        .map(f => path.join(tempDir, f));
+    console.log(`✓ Created ${chunkFiles.length} chunks`);
+    return chunkFiles;
+}
+/**
+ * Deletes a directory and all its contents
+ */
+export function deleteDirectory(dirPath) {
+    if (fs.existsSync(dirPath)) {
+        fs.rmSync(dirPath, { recursive: true, force: true });
+    }
+}
 //# sourceMappingURL=ffmpegOperations.js.map

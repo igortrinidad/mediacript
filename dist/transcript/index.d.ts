@@ -1,6 +1,6 @@
 import { Config } from '../types/index.js';
 /**
- * Transcribes an audio file trying Groq first, then OpenAI
+ * Transcribes an audio file, automatically splitting if larger than 10MB
  * @param audioFilePath - Audio file path
  * @param config - Configuration with API keys
  * @returns Transcribed text or null

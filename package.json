@@ -1,6 +1,6 @@
 {
   "name": "mediacript",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "CLI to convert media files to performat formats and extract text using Groq and OpenAI's Whisper API",
   "type": "module",
   "bin": {
