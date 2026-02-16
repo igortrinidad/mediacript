@@ -150,7 +150,7 @@ export async function getAudioDuration(inputPath) {
 export async function splitAudioIntoChunks(inputPath, maxSizeMB = 10) {
     const dir = path.dirname(inputPath);
     const baseName = path.basename(inputPath, path.extname(inputPath));
-    const ext = path.extname(inputPath);
+    const ext = path.extname(inputPath).toLowerCase();
     // Create temp directory for chunks
     const tempDir = path.join(dir, `${baseName}_chunks_temp`);
     if (!fs.existsSync(tempDir)) {
