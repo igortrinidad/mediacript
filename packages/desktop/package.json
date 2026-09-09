@@ -1,6 +1,6 @@
 {
   "name": "mediacript-desktop",
-  "version": "1.2.27",
+  "version": "1.2.28",
   "description": "Mediacript Desktop — interface gráfica para converter vídeos/áudios, transcrever, gerar legendas e cortes com IA",
   "private": true,
   "type": "module",

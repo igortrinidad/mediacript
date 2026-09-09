@@ -1,6 +1,6 @@
 {
   "name": "mediacript-monorepo",
-  "version": "1.2.27",
+  "version": "1.2.28",
   "private": true,
   "description": "Monorepo for Mediacript — the mediacript CLI/library (packages/cli) and the Mediacript Desktop app (packages/desktop)",
   "type": "module",

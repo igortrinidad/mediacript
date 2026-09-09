@@ -1,6 +1,6 @@
 {
   "name": "mediacript",
-  "version": "1.2.27",
+  "version": "1.2.28",
   "description": "CLI and library to convert media files to performant formats and extract text using Groq and OpenAI's Whisper API",
   "type": "module",
   "main": "./dist/cjs/lib.js",
