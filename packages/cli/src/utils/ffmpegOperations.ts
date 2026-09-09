@@ -729,6 +729,8 @@ export interface CompressToTargetSizeOptions {
   audioBitrateKbps?: number
   /** Downmix audio to mono to save bitrate budget. Default: false */
   monoAudio?: boolean
+  /** Drop the audio track entirely (`-an`), freeing its share of the budget. Default: false */
+  dropAudio?: boolean
   /** Optional max output height (keeps aspect ratio, even width). e.g. 720 */
   maxHeight?: number
   outputDir?: string
@@ -768,7 +770,8 @@ export async function compressVideoToTargetSize(
 
   const preset = options?.preset || 'slow'
   const crf = options?.crf ?? 26
-  const audioBitrateKbps = options?.audioBitrateKbps ?? 128
+  const dropAudio = options?.dropAudio ?? false
+  const audioBitrateKbps = dropAudio ? 0 : options?.audioBitrateKbps ?? 128
   const monoAudio = options?.monoAudio ?? false
 
   const duration = await getVideoDuration(inputPath)
@@ -790,7 +793,13 @@ export async function compressVideoToTargetSize(
   const args = ['-i', inputPath]
 
   if (options?.maxHeight) {
-    args.push('-vf', `scale=-2:${options.maxHeight}`)
+    // `min(h,ih)` makes this a cap rather than a resize — a source already
+    // below the limit is left alone instead of being upscaled into wasted
+    // bitrate. `trunc(../2)*2` and the `-2` width keep both dimensions even
+    // (yuv420p requires it), and lanczos preserves far more edge detail than
+    // the default bicubic on text-heavy footage like a screen recording.
+    // The `\,` escape is needed because the filtergraph parser splits on commas.
+    args.push('-vf', `scale=-2:trunc(min(${options.maxHeight}\\,ih)/2)*2:flags=lanczos`)
   }
 
   args.push(
@@ -800,12 +809,21 @@ export async function compressVideoToTargetSize(
     '-maxrate', `${videoBitrateKbps}k`,
     '-bufsize', `${videoBitrateKbps * 2}k`,
     '-pix_fmt', 'yuv420p',
-    '-c:a', 'aac',
-    '-b:a', `${audioBitrateKbps}k`
+    // High/4.1 is the widest profile mobile players (and WhatsApp's own
+    // re-encode) accept without falling back to software decoding, and a 2s
+    // GOP keeps scrubbing responsive without costing much bitrate.
+    '-profile:v', 'high',
+    '-level', '4.1',
+    '-g', '60'
   )
 
-  if (monoAudio) {
-    args.push('-ac', '1')
+  if (dropAudio) {
+    args.push('-an')
+  } else {
+    args.push('-c:a', 'aac', '-b:a', `${audioBitrateKbps}k`)
+    if (monoAudio) {
+      args.push('-ac', '1')
+    }
   }
 
   args.push('-movflags', '+faststart', '-y', outputPath)

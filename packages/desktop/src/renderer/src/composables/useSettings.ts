@@ -21,11 +21,21 @@ async function load(): Promise<void> {
   state.loaded = true
 }
 
+/**
+ * Re-runs just the FFmpeg probe. The help screen calls it after the user
+ * installs FFmpeg, so every screen reading this state (the home badge included)
+ * flips over without a full settings reload.
+ */
+async function checkFfmpeg(): Promise<FfmpegStatus> {
+  state.ffmpeg = await window.api.ffmpeg.check()
+  return state.ffmpeg
+}
+
 async function save(values: Partial<Config>): Promise<void> {
   state.config = await window.api.config.save(toPlain(values))
   state.aiProviders = await window.api.config.listAIProviders()
 }
 
 export function useSettings() {
-  return { state: readonly(state), load, save }
+  return { state: readonly(state), load, save, checkFfmpeg }
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import type { ScreencastQualityPreset } from '@shared/types'
 import { useStepFlow } from '../../composables/useStepFlow'
 import { useScreenRecorder, type StartRecordingOptions } from './composables/useScreenRecorder'
 import ScreencastSetupStep from './steps/ScreencastSetupStep.vue'
@@ -15,8 +16,14 @@ const recordedSeconds = ref(0)
 const stopError = ref('')
 const confirmingCancel = ref(false)
 const processingRunning = ref(true)
+// Captured at start rather than read back from the recorder, since the
+// processing step still needs them after the streams have been torn down.
+const qualityPreset = ref<ScreencastQualityPreset>('whatsapp')
+const hasAudio = ref(false)
 
 async function onStart(options: StartRecordingOptions): Promise<void> {
+  qualityPreset.value = options.qualityPreset ?? 'whatsapp'
+  hasAudio.value = !!options.micDeviceId
   await recorder.startRecording(options)
   flow.goTo('recording')
 }
@@ -102,6 +109,8 @@ function resetFlow(): void {
       <ScreencastProcessingStep
         :raw-file-path="rawFilePath"
         :duration-seconds="recordedSeconds"
+        :quality-preset="qualityPreset"
+        :has-audio="hasAudio"
         @running-change="processingRunning = $event"
       />
       <button v-if="!processingRunning" class="btn new-run-btn" type="button" @click="resetFlow">

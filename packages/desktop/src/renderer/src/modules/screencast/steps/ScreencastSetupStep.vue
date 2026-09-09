@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { CameraBubbleCorner, CameraBubbleOptions, CameraBubbleShape, ScreenSource } from '@shared/types'
+import type {
+  CameraBubbleCorner,
+  CameraBubbleOptions,
+  CameraBubbleShape,
+  ScreenSource,
+  ScreencastQualityPreset
+} from '@shared/types'
 import { BORDER_COLOR_PRESETS, DEFAULT_CAMERA_BUBBLE } from '../composables/cameraBubble'
 import {
   useScreenRecorder,
@@ -45,6 +51,18 @@ const shapeOptions: { value: CameraBubbleShape; label: string }[] = [
   { value: 'rounded', label: '▢ Arredondado' },
   { value: 'square', label: '■ Quadrado' }
 ]
+
+const qualityPreset = ref<ScreencastQualityPreset>('whatsapp')
+
+const qualityOptions: { value: ScreencastQualityPreset; label: string; hint: string }[] = [
+  { value: 'whatsapp', label: '📱 WhatsApp', hint: 'Até 45MB · 1080p (cai para 720p em gravações longas)' },
+  { value: 'balanced', label: '⚖️ Equilibrado', hint: 'Até 150MB · 1080p · bom para e-mail e Drive' },
+  { value: 'high', label: '💎 Alta qualidade', hint: 'Sem limite de tamanho · até 1440p' }
+]
+
+const selectedQualityHint = computed(
+  () => qualityOptions.find((option) => option.value === qualityPreset.value)?.hint ?? ''
+)
 
 const cameraBubble = computed<CameraBubbleOptions>(() => ({
   corner: bubbleCorner.value,
@@ -95,7 +113,8 @@ async function start(): Promise<void> {
       sourceId: selectedSourceId.value,
       cameraDeviceId: cameraEnabled.value ? selectedCameraId.value || undefined : undefined,
       micDeviceId: micEnabled.value ? selectedMicId.value || undefined : undefined,
-      cameraBubble: cameraEnabled.value ? { ...cameraBubble.value } : undefined
+      cameraBubble: cameraEnabled.value ? { ...cameraBubble.value } : undefined,
+      qualityPreset: qualityPreset.value
     })
   } catch (err: any) {
     error.value = err?.message || 'Não foi possível iniciar a gravação'
@@ -230,6 +249,23 @@ async function start(): Promise<void> {
         <select v-if="micEnabled" v-model="selectedMicId" class="device-select">
           <option v-for="mic in mics" :key="mic.deviceId" :value="mic.deviceId">{{ mic.label }}</option>
         </select>
+      </div>
+
+      <div class="section quality-section">
+        <span class="section-title">Qualidade do arquivo final</span>
+        <div class="chip-row">
+          <button
+            v-for="option in qualityOptions"
+            :key="option.value"
+            type="button"
+            class="chip"
+            :class="{ active: qualityPreset === option.value }"
+            @click="qualityPreset = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+        <p class="quality-hint">{{ selectedQualityHint }}</p>
       </div>
 
       <p v-if="error" class="error-text">{{ error }}</p>
@@ -368,6 +404,12 @@ async function start(): Promise<void> {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.quality-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .chip {

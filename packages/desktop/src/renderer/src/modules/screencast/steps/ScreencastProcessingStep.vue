@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { ScreencastLogLine, ScreencastProcessResult, ScreencastProgressEvent } from '@shared/types'
+import type {
+  ScreencastLogLine,
+  ScreencastProcessResult,
+  ScreencastProgressEvent,
+  ScreencastQualityPreset
+} from '@shared/types'
 
 const props = defineProps<{
   rawFilePath: string
   durationSeconds: number
+  qualityPreset: ScreencastQualityPreset
+  hasAudio: boolean
 }>()
 
 const emit = defineEmits<{
@@ -61,7 +68,9 @@ async function run(): Promise<void> {
   try {
     result.value = await window.api.screencast.process({
       rawFilePath: props.rawFilePath,
-      durationSeconds: props.durationSeconds
+      durationSeconds: props.durationSeconds,
+      qualityPreset: props.qualityPreset,
+      hasAudio: props.hasAudio
     })
   } catch (err: any) {
     error.value = err?.message || 'Não foi possível otimizar a gravação'

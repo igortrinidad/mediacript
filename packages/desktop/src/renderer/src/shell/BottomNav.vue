@@ -1,5 +1,6 @@
 <script setup lang="ts">
 export type ModuleId =
+  | 'home'
   | 'chat'
   | 'agents'
   | 'meetings'
@@ -9,6 +10,7 @@ export type ModuleId =
   | 'subtitle'
   | 'history'
   | 'settings'
+  | 'help'
 
 defineProps<{
   active: ModuleId
@@ -19,6 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const ITEMS: { id: ModuleId; label: string; icon: string }[] = [
+  { id: 'home', label: 'Início', icon: '🏠' },
   { id: 'chat', label: 'Chat', icon: '💬' },
   { id: 'agents', label: 'Agents', icon: '🤖' },
   { id: 'meetings', label: 'Reuniões', icon: '🎙️' },
@@ -27,7 +30,8 @@ const ITEMS: { id: ModuleId; label: string; icon: string }[] = [
   { id: 'screencast', label: 'Screencast', icon: '🎥' },
   { id: 'subtitle', label: 'Legendas', icon: '📝' },
   { id: 'history', label: 'History', icon: '🕐' },
-  { id: 'settings', label: 'Settings', icon: '⚙️' }
+  { id: 'settings', label: 'Settings', icon: '⚙️' },
+  { id: 'help', label: 'Ajuda', icon: '❓' }
 ]
 </script>
 

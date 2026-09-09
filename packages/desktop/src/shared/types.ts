@@ -199,10 +199,22 @@ export interface CameraBubbleOptions {
   borderColor: string
 }
 
+/**
+ * How much size the optimized recording is allowed to spend. `whatsapp` keeps
+ * the file under WhatsApp's media ceiling (dropping to 720p when a long
+ * recording can't sustain 1080p at that budget), `balanced` is a middle ground
+ * for e-mail/Drive, and `high` spends whatever 1080p actually needs.
+ */
+export type ScreencastQualityPreset = 'whatsapp' | 'balanced' | 'high'
+
 export interface ScreencastProcessRequest {
   rawFilePath: string
   /** Recorded duration, used to size the bitrate budget of the optimized file. */
   durationSeconds: number
+  /** Size/quality trade-off picked in the setup step. Defaults to `whatsapp`. */
+  qualityPreset?: ScreencastQualityPreset
+  /** False when the recording had no microphone, so the encoder can drop the audio budget. */
+  hasAudio?: boolean
 }
 
 export interface ScreencastProcessResult {

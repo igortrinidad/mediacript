@@ -46,6 +46,15 @@ import type {
 } from '../shared/types'
 
 const api = {
+  /**
+   * Which OS the app is running on. Read here rather than through IPC because
+   * the help screen needs it on its very first render to preselect the right
+   * FFmpeg install instructions.
+   */
+  system: {
+    platform: process.platform
+  },
+
   ffmpeg: {
     check: (): Promise<FfmpegStatus> => ipcRenderer.invoke('ffmpeg:check')
   },

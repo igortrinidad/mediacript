@@ -1,6 +1,7 @@
 import { reactive, readonly } from 'vue'
 
 export type ModuleId =
+  | 'home'
   | 'chat'
   | 'agents'
   | 'meetings'
@@ -10,9 +11,10 @@ export type ModuleId =
   | 'subtitle'
   | 'history'
   | 'settings'
+  | 'help'
 
 const state = reactive({
-  active: 'chat' as ModuleId,
+  active: 'home' as ModuleId,
   /** Set by History's "Continuar conversa"/"Ver conversa" — consumed once by ChatFlow to reopen that session instead of starting a new one. */
   pendingChatResumeId: null as string | null,
   /** Set by History's "Abrir reunião" — consumed once by MeetingsFlow to open that meeting instead of the list. */
