@@ -28,6 +28,7 @@ import type {
   ScreencastControlAction,
   ScreencastControlWindowOptions,
   ScreencastLogLine,
+  ScreencastPreferences,
   ScreencastProcessRequest,
   ScreencastProcessResult,
   ScreencastProgressEvent,
@@ -133,6 +134,10 @@ const api = {
   screencast: {
     listSources: (): Promise<ScreenSource[]> => ipcRenderer.invoke('screencast:listSources'),
     saveRawRecording: (buffer: ArrayBuffer): Promise<string> => ipcRenderer.invoke('screencast:saveRawRecording', buffer),
+    getPreferences: (): Promise<Partial<ScreencastPreferences> | null> =>
+      ipcRenderer.invoke('screencast:getPreferences'),
+    savePreferences: (preferences: ScreencastPreferences): Promise<void> =>
+      ipcRenderer.invoke('screencast:savePreferences', preferences),
     process: (request: ScreencastProcessRequest): Promise<ScreencastProcessResult> =>
       ipcRenderer.invoke('screencast:process', request),
     onProgress: (callback: (event: ScreencastProgressEvent) => void): (() => void) => {

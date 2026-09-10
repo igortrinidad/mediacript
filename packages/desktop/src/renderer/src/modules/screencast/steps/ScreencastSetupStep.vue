@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type {
   CameraBubbleCorner,
   CameraBubbleOptions,
   CameraBubbleShape,
   ScreenSource,
+  ScreencastPreferences,
   ScreencastQualityPreset
 } from '@shared/types'
 import { BORDER_COLOR_PRESETS, DEFAULT_CAMERA_BUBBLE } from '../composables/cameraBubble'
+import {
+  loadScreencastPreferences,
+  resolveDeviceId,
+  saveScreencastPreferences,
+  toDevicePreference
+} from '../composables/useScreencastPreferences'
 import {
   useScreenRecorder,
   type RecordingDeviceOption,
@@ -76,6 +83,51 @@ const selectedSourceThumbnail = computed(
   () => sources.value.find((source) => source.id === selectedSourceId.value)?.thumbnailDataUrl ?? null
 )
 
+/**
+ * The whole setup minus the screen/window pick — that one is deliberately not
+ * remembered, since window ids change every session and a stale screen choice
+ * would silently record the wrong thing.
+ */
+const preferences = computed<ScreencastPreferences>(() => ({
+  cameraEnabled: cameraEnabled.value,
+  micEnabled: micEnabled.value,
+  camera: toDevicePreference(cameras.value, selectedCameraId.value),
+  mic: toDevicePreference(mics.value, selectedMicId.value),
+  cameraBubble: cameraBubble.value,
+  qualityPreset: qualityPreset.value
+}))
+
+/** Coalesces the burst of writes a slider drag would otherwise produce. */
+const PREFERENCES_SAVE_DEBOUNCE_MS = 400
+
+let preferencesLoaded = false
+let saveHandle: ReturnType<typeof setTimeout> | null = null
+
+function schedulePreferencesSave(): void {
+  if (saveHandle) clearTimeout(saveHandle)
+  saveHandle = setTimeout(() => {
+    saveHandle = null
+    void saveScreencastPreferences(preferences.value)
+  }, PREFERENCES_SAVE_DEBOUNCE_MS)
+}
+
+function flushPreferencesSave(): void {
+  if (!saveHandle) return
+  clearTimeout(saveHandle)
+  saveHandle = null
+  void saveScreencastPreferences(preferences.value)
+}
+
+// Persist as the user tweaks rather than only on start, so a setup they
+// configured but didn't record with still comes back next time.
+watch(preferences, () => {
+  if (preferencesLoaded) schedulePreferencesSave()
+})
+
+// This step unmounts the moment recording starts — flush anything still
+// waiting out the debounce instead of dropping it.
+onBeforeUnmount(flushPreferencesSave)
+
 // `<input type="color">` always reports lowercase hex, but a preset could be
 // typed in any case — compare normalized so the swatch highlights correctly.
 function isSelectedColor(color: string): boolean {
@@ -92,11 +144,24 @@ async function loadSources(): Promise<void> {
 onMounted(async () => {
   try {
     await loadSources()
-    const devices = await recorder.listMediaDevices()
+    const [devices, saved] = await Promise.all([recorder.listMediaDevices(), loadScreencastPreferences()])
     cameras.value = devices.cameras
     mics.value = devices.mics
-    selectedCameraId.value = devices.cameras[0]?.deviceId ?? ''
-    selectedMicId.value = devices.mics[0]?.deviceId ?? ''
+
+    cameraEnabled.value = saved.cameraEnabled
+    micEnabled.value = saved.micEnabled
+    selectedCameraId.value = resolveDeviceId(devices.cameras, saved.camera)
+    selectedMicId.value = resolveDeviceId(devices.mics, saved.mic)
+    bubbleCorner.value = saved.cameraBubble.corner
+    bubbleShape.value = saved.cameraBubble.shape
+    bubbleSizePercent.value = Math.round(saved.cameraBubble.sizeRatio * 100)
+    bubbleBorderWidth.value = saved.cameraBubble.borderWidth
+    bubbleBorderColor.value = saved.cameraBubble.borderColor
+    qualityPreset.value = saved.qualityPreset
+
+    // Arm the auto-save only once the stored values are in place — otherwise a
+    // failed load would let the next tweak overwrite them with the defaults.
+    preferencesLoaded = true
   } catch (err: any) {
     error.value = err?.message || 'Não foi possível listar telas/dispositivos'
   } finally {
@@ -130,7 +195,7 @@ async function start(): Promise<void> {
     <div v-if="loading" class="hint">Carregando telas e dispositivos…</div>
 
     <template v-else>
-      <div class="section">
+      <div class="section source-section">
         <div class="section-header">
           <span class="section-title">Tela ou janela</span>
           <button class="btn btn-ghost btn-refresh" type="button" @click="loadSources">↻ Atualizar</button>
@@ -278,12 +343,26 @@ async function start(): Promise<void> {
 </template>
 
 <style scoped>
+/*
+ * The source picker wants the whole window so its thumbnails stay readable at
+ * four across; every other control reads better in a narrow column, so those
+ * are centered at the old 640px instead of stretching with it.
+ */
 .screencast-setup {
-  max-width: 640px;
+  max-width: 1120px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.section:not(.source-section),
+.step-intro,
+.error-text,
+.hint {
+  width: 100%;
+  max-width: 640px;
+  align-self: center;
 }
 
 .step-intro {
@@ -315,16 +394,39 @@ async function start(): Promise<void> {
   padding: 4px 8px;
 }
 
+/* One column by default, then sm/md/lg/xl steps up to four across. */
 .source-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .source-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .source-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .source-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .source-card {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* Window titles are long and unbreakable — without this the button's
+     intrinsic width wins and the label runs past the card. */
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--border);
   background: var(--bg-elevated);
   border-radius: 10px;
@@ -345,6 +447,9 @@ async function start(): Promise<void> {
 }
 
 .source-name {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
   font-size: 11px;
   color: var(--text-muted);
   white-space: nowrap;

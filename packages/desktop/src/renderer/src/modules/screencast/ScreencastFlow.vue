@@ -121,12 +121,25 @@ function resetFlow(): void {
 </template>
 
 <style scoped>
+/*
+ * Wide enough for the setup step's four-across source grid; the steps that
+ * follow are text and stay at the original reading width. (A child
+ * component's root element carries this component's scope id, so
+ * `.screencast-processing` is reachable from here without `:deep`.)
+ */
 .screencast-flow {
-  max-width: 720px;
+  max-width: 1120px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.recording-notice,
+.screencast-processing {
+  width: 100%;
+  max-width: 720px;
+  align-self: center;
 }
 
 .recording-notice {

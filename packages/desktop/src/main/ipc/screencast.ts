@@ -1,11 +1,12 @@
 import { ipcMain, desktopCapturer, BrowserWindow, type IpcMainInvokeEvent } from 'electron'
 import { join } from 'path'
-import { saveRawRecording } from '../lib/screencastStore'
+import { getScreencastPreferences, saveRawRecording, saveScreencastPreferences } from '../lib/screencastStore'
 import { processRecording } from '../lib/screencastRunner'
 import type {
   ScreenSource,
   ScreencastControlAction,
   ScreencastControlWindowOptions,
+  ScreencastPreferences,
   ScreencastProcessRequest,
   ScreencastProcessResult
 } from '../../shared/types'
@@ -67,6 +68,14 @@ export function registerScreencastIpc(): void {
 
   ipcMain.handle('screencast:saveRawRecording', (_event, buffer: ArrayBuffer): string => {
     return saveRawRecording(Buffer.from(buffer))
+  })
+
+  ipcMain.handle('screencast:getPreferences', (): Partial<ScreencastPreferences> | null => {
+    return getScreencastPreferences()
+  })
+
+  ipcMain.handle('screencast:savePreferences', (_event, preferences: ScreencastPreferences): void => {
+    saveScreencastPreferences(preferences)
   })
 
   ipcMain.handle(

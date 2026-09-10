@@ -207,6 +207,31 @@ export interface CameraBubbleOptions {
  */
 export type ScreencastQualityPreset = 'whatsapp' | 'balanced' | 'high'
 
+/**
+ * A camera/microphone remembered between runs. The label is stored alongside
+ * the id as a fallback: `deviceId` can be reissued by the OS after a replug or
+ * a driver update, while the human-readable name usually survives it.
+ */
+export interface ScreencastDevicePreference {
+  deviceId: string
+  label: string
+}
+
+/**
+ * Everything the setup step remembers between recordings, persisted next to
+ * config.json as `screencast-preferences.json`. It is read back as a partial:
+ * a file written by an older build may predate fields, so the renderer merges
+ * whatever is stored over its own defaults instead of trusting the shape.
+ */
+export interface ScreencastPreferences {
+  cameraEnabled: boolean
+  micEnabled: boolean
+  camera: ScreencastDevicePreference | null
+  mic: ScreencastDevicePreference | null
+  cameraBubble: CameraBubbleOptions
+  qualityPreset: ScreencastQualityPreset
+}
+
 export interface ScreencastProcessRequest {
   rawFilePath: string
   /** Recorded duration, used to size the bitrate budget of the optimized file. */
