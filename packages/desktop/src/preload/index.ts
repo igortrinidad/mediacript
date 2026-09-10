@@ -156,6 +156,15 @@ const api = {
     sendControlAction: (action: ScreencastControlAction): void => {
       ipcRenderer.send('screencast:controlAction', action)
     },
+    /** Fire-and-forget: a preview frame is only useful while it's current, so a dropped one is not worth awaiting. */
+    sendPreviewFrame: (frame: string): void => {
+      ipcRenderer.send('screencast:previewFrame', frame)
+    },
+    onPreviewFrame: (callback: (frame: string) => void): (() => void) => {
+      const listener = (_: unknown, frame: string) => callback(frame)
+      ipcRenderer.on('screencast:previewFrame', listener)
+      return () => ipcRenderer.removeListener('screencast:previewFrame', listener)
+    },
     onControlAction: (callback: (action: ScreencastControlAction) => void): (() => void) => {
       const listener = (_: unknown, action: ScreencastControlAction) => callback(action)
       ipcRenderer.on('screencast:controlAction', listener)

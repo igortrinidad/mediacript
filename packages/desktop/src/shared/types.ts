@@ -180,11 +180,19 @@ export interface ScreenSource {
   thumbnailDataUrl: string
 }
 
-export type ScreencastControlAction = 'pause' | 'resume' | 'stop' | 'cancel'
+export type ScreencastControlAction =
+  | 'pause'
+  | 'resume'
+  | 'stop'
+  | 'cancel'
+  | 'preview-on'
+  | 'preview-off'
 
 export interface ScreencastControlWindowOptions {
   micEnabled: boolean
   cameraEnabled: boolean
+  /** Whether the floater opens with the live preview pane already showing. */
+  previewEnabled: boolean
 }
 
 export type CameraBubbleCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
@@ -230,6 +238,7 @@ export interface ScreencastPreferences {
   mic: ScreencastDevicePreference | null
   cameraBubble: CameraBubbleOptions
   qualityPreset: ScreencastQualityPreset
+  previewEnabled: boolean
 }
 
 export interface ScreencastProcessRequest {

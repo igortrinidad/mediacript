@@ -13,6 +13,8 @@ export interface StartRecordingOptions {
   micDeviceId?: string
   cameraBubble?: CameraBubbleOptions
   qualityPreset?: ScreencastQualityPreset
+  /** Opens the floating control window with its live preview pane already on. */
+  previewEnabled?: boolean
 }
 
 /**
@@ -36,6 +38,18 @@ const CAPTURE_FPS = 30
 const INTERMEDIATE_BITS_PER_PIXEL = 0.12
 const MIN_INTERMEDIATE_BPS = 8_000_000
 const MAX_INTERMEDIATE_BPS = 20_000_000
+
+/**
+ * Live preview streamed to the floating control window while recording. The
+ * floater is a separate renderer process, so it cannot read this window's
+ * canvas: the alternatives are a second desktop capture or a WebRTC loopback,
+ * both of which spend real encoding budget while the recorder is already
+ * spending it. A downscaled JPEG per frame costs a couple of milliseconds and
+ * lands around 40KB/s over IPC at these numbers.
+ */
+const PREVIEW_FPS = 5
+const PREVIEW_WIDTH = 320
+const PREVIEW_JPEG_QUALITY = 0.5
 
 /** Ordered by preference — the first one this Chromium build can encode wins. */
 const RECORDER_MIME_TYPES = [
@@ -84,6 +98,9 @@ const state = reactive({
   rawFilePath: null as string | null
 })
 
+/** The composite the recorder is encoding — kept so the preview can be toggled mid-recording. */
+let compositeCanvas: HTMLCanvasElement | null = null
+let previewHandle: ReturnType<typeof setInterval> | null = null
 let screenStream: MediaStream | null = null
 let cameraStream: MediaStream | null = null
 let micStream: MediaStream | null = null
@@ -118,6 +135,37 @@ async function listMediaDevices(): Promise<{ cameras: RecordingDeviceOption[]; m
     .map((d) => ({ deviceId: d.deviceId, label: d.label || 'Microfone' }))
 
   return { cameras, mics }
+}
+
+/**
+ * Downscales the composite on its own timer rather than inside the compositing
+ * rAF loop: `toDataURL` is synchronous, and the encoder's frame budget is not
+ * the place to pay for it.
+ */
+function startPreviewStream(): void {
+  const source = compositeCanvas
+  if (previewHandle !== null || !source) return
+
+  const canvas = document.createElement('canvas')
+  canvas.width = PREVIEW_WIDTH
+  canvas.height = Math.max(1, Math.round((PREVIEW_WIDTH * source.height) / source.width))
+  const ctx = canvas.getContext('2d', { alpha: false })!
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'medium'
+
+  previewHandle = setInterval(() => {
+    // While paused nothing is being recorded, so a moving preview would be
+    // lying — stop sending and let the floater freeze on the last frame.
+    if (state.phase !== 'recording') return
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height)
+    window.api.screencast.sendPreviewFrame(canvas.toDataURL('image/jpeg', PREVIEW_JPEG_QUALITY))
+  }, 1000 / PREVIEW_FPS)
+}
+
+function stopPreviewStream(): void {
+  if (previewHandle === null) return
+  clearInterval(previewHandle)
+  previewHandle = null
 }
 
 function drawFrame(
@@ -195,6 +243,7 @@ async function startRecording(options: StartRecordingOptions): Promise<void> {
   const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true })!
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
+  compositeCanvas = canvas
   const bubble = options.cameraBubble ?? DEFAULT_CAMERA_BUBBLE
 
   // rAF fires at the display's refresh rate (often 60/120Hz). Repainting a
@@ -241,12 +290,16 @@ async function startRecording(options: StartRecordingOptions): Promise<void> {
     else if (action === 'resume') resume()
     else if (action === 'stop') void stop()
     else if (action === 'cancel') void cancel()
+    else if (action === 'preview-on') startPreviewStream()
+    else if (action === 'preview-off') stopPreviewStream()
   })
 
   await window.api.screencast.openControlWindow({
     micEnabled: !!micStream,
-    cameraEnabled: !!cameraStream
+    cameraEnabled: !!cameraStream,
+    previewEnabled: !!options.previewEnabled
   })
+  if (options.previewEnabled) startPreviewStream()
 }
 
 function pause(): void {
@@ -301,6 +354,8 @@ async function cancel(): Promise<void> {
 }
 
 function cleanupStreams(): void {
+  stopPreviewStream()
+  compositeCanvas = null
   if (rafHandle !== null) {
     cancelAnimationFrame(rafHandle)
     rafHandle = null

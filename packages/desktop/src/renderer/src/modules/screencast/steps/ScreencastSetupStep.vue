@@ -59,6 +59,8 @@ const shapeOptions: { value: CameraBubbleShape; label: string }[] = [
   { value: 'square', label: '■ Quadrado' }
 ]
 
+const previewEnabled = ref(false)
+
 const qualityPreset = ref<ScreencastQualityPreset>('whatsapp')
 
 const qualityOptions: { value: ScreencastQualityPreset; label: string; hint: string }[] = [
@@ -94,7 +96,8 @@ const preferences = computed<ScreencastPreferences>(() => ({
   camera: toDevicePreference(cameras.value, selectedCameraId.value),
   mic: toDevicePreference(mics.value, selectedMicId.value),
   cameraBubble: cameraBubble.value,
-  qualityPreset: qualityPreset.value
+  qualityPreset: qualityPreset.value,
+  previewEnabled: previewEnabled.value
 }))
 
 /** Coalesces the burst of writes a slider drag would otherwise produce. */
@@ -158,6 +161,7 @@ onMounted(async () => {
     bubbleBorderWidth.value = saved.cameraBubble.borderWidth
     bubbleBorderColor.value = saved.cameraBubble.borderColor
     qualityPreset.value = saved.qualityPreset
+    previewEnabled.value = saved.previewEnabled
 
     // Arm the auto-save only once the stored values are in place — otherwise a
     // failed load would let the next tweak overwrite them with the defaults.
@@ -179,7 +183,8 @@ async function start(): Promise<void> {
       cameraDeviceId: cameraEnabled.value ? selectedCameraId.value || undefined : undefined,
       micDeviceId: micEnabled.value ? selectedMicId.value || undefined : undefined,
       cameraBubble: cameraEnabled.value ? { ...cameraBubble.value } : undefined,
-      qualityPreset: qualityPreset.value
+      qualityPreset: qualityPreset.value,
+      previewEnabled: previewEnabled.value
     })
   } catch (err: any) {
     error.value = err?.message || 'Não foi possível iniciar a gravação'
@@ -316,6 +321,17 @@ async function start(): Promise<void> {
         </select>
       </div>
 
+      <div class="section toggle-row preview-row">
+        <label class="toggle-label">
+          <input v-model="previewEnabled" type="checkbox" />
+          Pré-visualizar no painel flutuante
+        </label>
+        <p class="preview-hint">
+          Mostra ao vivo (5 fps) o que está sendo gravado, já com a câmera. Enquanto está ligada, o painel
+          é excluído da captura — em Windows anteriores ao 10 2004 ele aparece como um retângulo preto.
+        </p>
+      </div>
+
       <div class="section quality-section">
         <span class="section-title">Qualidade do arquivo final</span>
         <div class="chip-row">
@@ -387,6 +403,20 @@ async function start(): Promise<void> {
 .section-title {
   font-weight: 600;
   font-size: 13px;
+}
+
+/* The hint is a full sentence — it reads as a block under the checkbox rather
+   than squeezed beside it like the device pickers. */
+.preview-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.preview-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .btn-refresh {

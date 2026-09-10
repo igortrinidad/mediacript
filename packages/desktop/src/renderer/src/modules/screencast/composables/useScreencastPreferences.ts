@@ -17,7 +17,8 @@ function defaultPreferences(): ScreencastPreferences {
     camera: null,
     mic: null,
     cameraBubble: { ...DEFAULT_CAMERA_BUBBLE },
-    qualityPreset: 'whatsapp'
+    qualityPreset: 'whatsapp',
+    previewEnabled: false
   }
 }
 
@@ -68,7 +69,8 @@ export async function loadScreencastPreferences(): Promise<ScreencastPreferences
     camera: normalizeDevice(stored.camera),
     mic: normalizeDevice(stored.mic),
     cameraBubble: normalizeBubble(stored.cameraBubble),
-    qualityPreset: pickFrom(QUALITY_PRESETS, stored.qualityPreset, 'whatsapp')
+    qualityPreset: pickFrom(QUALITY_PRESETS, stored.qualityPreset, 'whatsapp'),
+    previewEnabled: stored.previewEnabled === true
   }
 }
 
