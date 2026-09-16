@@ -6,6 +6,7 @@ import type {
   ScreencastProgressEvent,
   ScreencastQualityPreset
 } from '@shared/types'
+import { useNavigation } from '../../../composables/useNavigation'
 
 const props = defineProps<{
   rawFilePath: string
@@ -29,6 +30,8 @@ interface StepState {
 // only the tail is useful, and capping it keeps a long recording from growing
 // this array without bound.
 const MAX_LOG_LINES = 300
+
+const nav = useNavigation()
 
 const steps = ref<StepState[]>([])
 const logs = ref<ScreencastLogLine[]>([])
@@ -111,6 +114,11 @@ async function openOutput(): Promise<void> {
 function revealOutput(): void {
   if (result.value) window.api.files.revealInFolder(result.value.outputPath)
 }
+
+/** Jumps to Legendas with the optimized MP4 already picked — only the action is left to choose. */
+function useInSubtitles(): void {
+  if (result.value) nav.openSubtitlesFor(result.value.outputPath)
+}
 </script>
 
 <template>
@@ -146,6 +154,7 @@ function revealOutput(): void {
       <div class="result-actions">
         <button class="btn btn-ghost" type="button" @click="openOutput">Abrir</button>
         <button class="btn btn-ghost" type="button" @click="revealOutput">Mostrar na pasta</button>
+        <button class="btn btn-primary" type="button" @click="useInSubtitles">💬 Usar em legendas</button>
       </div>
     </template>
 
@@ -272,6 +281,8 @@ h3 {
 
 .result-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
 }
 </style>

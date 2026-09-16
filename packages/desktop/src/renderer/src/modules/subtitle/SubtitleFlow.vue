@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import type { FileKind, JobRequest, SubtitleOptionsInput } from '@shared/types'
 import { useStepFlow } from '../../composables/useStepFlow'
 import { useRetry } from '../../composables/useRetry'
+import { useNavigation } from '../../composables/useNavigation'
 import FileDropzone from '../../shared/components/FileDropzone.vue'
 import SubtitleActionStep from './steps/SubtitleActionStep.vue'
 import SubtitleOptionsStep from './steps/SubtitleOptionsStep.vue'
@@ -10,6 +11,7 @@ import ProcessingPanel from '../../shared/components/ProcessingPanel.vue'
 import { actionFor, operationFor, type SubtitleAction } from './actions'
 
 const retry = useRetry()
+const nav = useNavigation()
 
 const stepOrder = computed(() => ['action', 'files', 'options', 'processing'])
 const flow = useStepFlow(stepOrder)
@@ -18,6 +20,9 @@ const action = ref<SubtitleAction>('apply')
 const filePaths = ref<string[]>([])
 const fileKind = ref<FileKind>('video')
 const subtitleOptions = ref<SubtitleOptionsInput>({ mode: 'hardsub' })
+// Set when another module (Screencast) hands us a video — the action is still
+// asked, but the dropzone step is skipped since the file is already chosen.
+const preselectedFile = ref<string | null>(null)
 
 // Only applying a subtitle needs the hardsub/softsub picker — the two
 // extractions go straight from the files step to processing.
@@ -30,6 +35,14 @@ const FILE_INTRO: Record<SubtitleAction, string> = {
 }
 
 onMounted(() => {
+  const handedFile = nav.consumeSubtitleFile()
+  if (handedFile) {
+    preselectedFile.value = handedFile
+    filePaths.value = [handedFile]
+    fileKind.value = 'video'
+    return
+  }
+
   const pending = retry.consumeRetry()
   if (!pending) return
 
@@ -45,7 +58,15 @@ onMounted(() => {
 
 function onActionSelected(selected: SubtitleAction): void {
   action.value = selected
+  if (preselectedFile.value) {
+    flow.goTo(needsOptionsStep.value ? 'options' : 'processing')
+    return
+  }
   flow.next()
+}
+
+function fileName(path: string): string {
+  return path.split(/[/\\]/).pop() || path
 }
 
 function onFilesSelected(paths: string[], kind: FileKind): void {
@@ -61,6 +82,7 @@ const jobRequest = computed<JobRequest>(() => ({
 }))
 
 function resetFlow(): void {
+  preselectedFile.value = null
   filePaths.value = []
   fileKind.value = 'video'
   subtitleOptions.value = { mode: 'hardsub' }
@@ -70,7 +92,12 @@ function resetFlow(): void {
 
 <template>
   <div class="subtitle-flow">
-    <SubtitleActionStep v-if="flow.currentStep.value === 'action'" @continue="onActionSelected" />
+    <template v-if="flow.currentStep.value === 'action'">
+      <p v-if="preselectedFile" class="preselected-file" :title="preselectedFile">
+        🎬 Arquivo selecionado: <strong>{{ fileName(preselectedFile) }}</strong>
+      </p>
+      <SubtitleActionStep @continue="onActionSelected" />
+    </template>
 
     <template v-else-if="flow.currentStep.value === 'files'">
       <p class="step-intro">{{ FILE_INTRO[action] }}</p>
@@ -109,6 +136,16 @@ function resetFlow(): void {
   font-size: 13px;
   margin: 0 0 16px;
   text-align: center;
+}
+
+.preselected-file {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .new-run-btn {

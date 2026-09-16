@@ -12,8 +12,8 @@ Anything here can be run from the repo root and may touch more than one package.
 Scripts que fazem parte da superfície publicada de um pacote precisam morar
 dentro dele, senão não são distribuídos:
 
-- **`unlock-mac`** → [`packages/cli/scripts/unlock-mac.mjs`](../packages/cli/scripts/unlock-mac.mjs).
-  Ele é executado pelo usuário final via `npx mediacript unlock-mac`, ou seja,
+- **`install-mac`** → [`packages/cli/scripts/install-mac.mjs`](../packages/cli/scripts/install-mac.mjs).
+  Ele é executado pelo usuário final via `npx mediacript install-mac`, ou seja,
   vai dentro do tarball publicado no npm — e o npm só empacota arquivos que
   estão sob a pasta do pacote. Fora do `packages/cli`, o comando quebraria para
   quem instala pelo npm (que é justamente quem precisa dele: pessoas que

@@ -30,7 +30,7 @@ mediacript/
 │   │   ├── src/        # código-fonte TypeScript (ai, transcript, highlights, subtitles, utils, workflow)
 │   │   ├── tests/      # suíte Jest
 │   │   ├── examples/   # exemplos de uso como biblioteca
-│   │   └── scripts/    # unlock-mac (publicado) + smoke tests do build
+│   │   └── scripts/    # install-mac (publicado) + smoke tests do build
 │   └── desktop/        # app Electron "Mediacript Desktop"
 │       ├── src/main/       # processo principal: janelas, IPC, orquestração dos jobs
 │       ├── src/preload/    # contextBridge (window.api)
@@ -141,15 +141,18 @@ API keys e preferências ficam em um único arquivo, usado por CLI e desktop:
 A transcrição tenta **Groq** primeiro (mais rápido e barato) e cai para **OpenAI** se falhar ou não
 estiver configurada.
 
-### macOS: app "danificado" ao abrir o `.dmg`
+### macOS: instalar / app "danificado" ao abrir o `.dmg`
 
-O `.dmg` não é assinado/notarizado, então o Gatekeeper coloca o app em quarentena. Depois de baixar:
+O `.dmg` não é assinado/notarizado, então o Gatekeeper coloca o app em quarentena. Basta rodar:
 
 ```bash
-npx mediacript unlock-mac
+npx mediacript install-mac
 ```
 
-O comando monta o DMG, instala em `/Applications`, remove a quarentena e abre o app.
+O comando consulta a última release no GitHub, baixa o `.dmg` para `~/Downloads` se ainda não
+estiver lá (ou se o que estiver lá for mais antigo), monta o DMG, instala em `/Applications`,
+remove a quarentena e abre o app. Sem internet, ele usa o `Mediacript*.dmg` que já estiver em
+`~/Downloads`. Também serve para atualizar: rode de novo quando sair uma versão nova.
 
 ## 📦 Release
 

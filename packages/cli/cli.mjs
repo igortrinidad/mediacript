@@ -10,10 +10,13 @@ const __dirname = dirname(__filename)
 async function main() {
   const [subcommand] = process.argv.slice(2)
 
-  if (subcommand === 'unlock-mac') {
-    const unlockMacURL = pathToFileURL(join(__dirname, 'scripts', 'unlock-mac.mjs')).href
-    const { runUnlockMac } = await import(unlockMacURL)
-    await runUnlockMac()
+  if (subcommand === 'install-mac' || subcommand === 'unlock-mac') {
+    if (subcommand === 'unlock-mac') {
+      console.warn('⚠️  "unlock-mac" foi renomeado para "install-mac". Use: npx mediacript install-mac\n')
+    }
+    const installMacURL = pathToFileURL(join(__dirname, 'scripts', 'install-mac.mjs')).href
+    const { runInstallMac } = await import(installMacURL)
+    await runInstallMac()
     return
   }
 

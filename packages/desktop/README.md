@@ -70,14 +70,17 @@ Windows), então configurar por um dos dois já vale para o outro.
 
 O `.dmg` publicado nas [Releases do GitHub](https://github.com/igortrinidad/mediacript/releases) não é
 assinado/notarizado, então o Gatekeeper do macOS coloca o app em quarentena ao baixar (aparece
-"Mediacript está danificado e não pode ser aberto"). Depois de baixar o `.dmg`, rode:
+"Mediacript está danificado e não pode ser aberto"). Não precisa baixar nada manualmente — rode:
 
 ```bash
-npx mediacript unlock-mac
+npx mediacript install-mac
 ```
 
-Isso monta o DMG, instala o app em `/Applications`, remove a quarentena e já abre o Mediacript
-(script em [`../cli/scripts/unlock-mac.mjs`](../cli/scripts/unlock-mac.mjs)).
+Isso consulta a última release no GitHub, baixa o `.dmg` para `~/Downloads` se não houver um (ou se
+o que houver for mais antigo), monta o DMG, instala o app em `/Applications`, remove a quarentena e
+já abre o Mediacript (script em [`../cli/scripts/install-mac.mjs`](../cli/scripts/install-mac.mjs)).
+Sem internet, ele usa o `Mediacript*.dmg` já presente em `~/Downloads`. Rode de novo para atualizar.
+Requer Node.js 18+.
 
 ## Desenvolvimento
 

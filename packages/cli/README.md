@@ -263,7 +263,7 @@ packages/cli/
 ├── tests/           # Jest suite (unit + performance)
 ├── examples/        # Runnable examples of the library API
 ├── scripts/
-│   ├── unlock-mac.mjs  # `npx mediacript unlock-mac` — ships with the published package
+│   ├── install-mac.mjs # `npx mediacript install-mac` — ships with the published package
 │   └── smoke/          # Post-build checks that the ESM/CJS/type surfaces load
 ├── cli.mjs          # bin: mediacript
 └── convert.js       # bin: mediacript-convert (legacy standalone converter)

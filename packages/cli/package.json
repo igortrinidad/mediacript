@@ -27,7 +27,7 @@
     "dist",
     "cli.mjs",
     "convert.js",
-    "scripts/unlock-mac.mjs",
+    "scripts/install-mac.mjs",
     "README.md",
     "LIBRARY_USAGE.md"
   ],
@@ -45,7 +45,7 @@
     "build": "npm run build:esm && npm run build:cjs && npm run build:post",
     "build:esm": "tsc",
     "build:cjs": "tsc --project tsconfig.cjs.json",
-    "build:post": "shx cp dist-esm-package.json dist/esm/package.json && shx cp dist-cjs-package.json dist/cjs/package.json && shx chmod +x dist/esm/index.js && shx chmod +x cli.mjs && shx chmod +x scripts/unlock-mac.mjs",
+    "build:post": "shx cp dist-esm-package.json dist/esm/package.json && shx cp dist-cjs-package.json dist/cjs/package.json && shx chmod +x dist/esm/index.js && shx chmod +x cli.mjs && shx chmod +x scripts/install-mac.mjs",
     "dev": "node --loader ts-node/esm --watch src/index.ts",
     "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest",
     "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --watch",

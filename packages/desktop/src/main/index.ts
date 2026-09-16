@@ -23,6 +23,11 @@ import { registerAgentsIpc } from './ipc/agents'
 import { registerScreencastIpc } from './ipc/screencast'
 import { registerMeetingsIpc } from './ipc/meetings'
 import { registerMediaProtocol } from './lib/mediaProtocol'
+import { fixShellPath } from './lib/shellPath'
+
+// Dock/Finder launches on macOS don't inherit the shell PATH, so a Homebrew
+// ffmpeg would show as "not installed". Must run before any IPC handler spawns it.
+fixShellPath()
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
