@@ -37,12 +37,14 @@ const fields = reactive<Record<ApiKeyField, { value: string; configured: boolean
 })
 
 const saving = ref(false)
+const configDir = ref('')
 
 onMounted(async () => {
   await load()
   for (const key of Object.keys(fields) as ApiKeyField[]) {
     fields[key].configured = !!settings.config[key]
   }
+  configDir.value = await window.api.config.getConfigDir()
 })
 
 function toggleClear(key: ApiKeyField): void {

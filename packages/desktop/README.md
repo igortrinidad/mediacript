@@ -82,6 +82,25 @@ já abre o Mediacript (script em [`../cli/scripts/install-mac.mjs`](../cli/scrip
 Sem internet, ele usa o `Mediacript*.dmg` já presente em `~/Downloads`. Rode de novo para atualizar.
 Requer Node.js 18+.
 
+## Atualizações automáticas
+
+Ao abrir, o app consulta a última release em `api.github.com/repos/igortrinidad/mediacript/releases/latest`
+e compara com a própria versão (`app.getVersion()`). Se houver uma mais nova, aparece um popup com as
+notas da release e o botão **Baixar e instalar**; em **Settings** há o rodapé com a versão atual e o
+botão **Verificar atualizações** para checar manualmente. "Depois" só esconde o popup nessa sessão — ele
+volta na próxima abertura.
+
+O instalador é baixado para a pasta temporária do sistema (`mediacript-updates/`) com barra de progresso
+e o passo de instalação depende do sistema (`main/lib/updater.ts`):
+
+| Sistema | O que acontece ao instalar |
+| --- | --- |
+| Windows | O app fecha e o `Mediacript Setup x.y.z.exe` (NSIS) é executado; ele substitui a instalação atual. |
+| macOS | O app fecha e um script em segundo plano monta o `.dmg`, copia o `.app` por cima do atual (em `/Applications`), remove a quarentena do Gatekeeper (`xattr -cr`) e reabre o Mediacript — o mesmo que `npx mediacript install-mac` faz. |
+| Linux | O workflow não publica AppImage, então o botão abre a página da release no navegador. |
+
+Falha de rede na abertura é silenciosa (nada de popup); só a verificação manual em Settings mostra o erro.
+
 ## Desenvolvimento
 
 ```bash
@@ -127,7 +146,7 @@ restaurar o symlink de desenvolvimento.
 packages/desktop/
 ├── src/
 │   ├── main/            # processo principal do Electron (janelas, IPC, orquestração dos jobs)
-│   │   ├── ipc/         # handlers: agents, chat, compress, config, ffmpeg, files, history, jobs, meetings, screencast
+│   │   ├── ipc/         # handlers: agents, chat, compress, config, ffmpeg, files, history, jobs, meetings, screencast, updates
 │   │   └── lib/         # jobRunner (chama as funções do mediacript) + stores em JSON (history, agents, chat, meetings, screencast)
 │   ├── preload/         # contextBridge — expõe `window.api` de forma segura ao renderer
 │   ├── renderer/        # app Vue 3

@@ -13,16 +13,22 @@ import SubtitleFlow from '../modules/subtitle/SubtitleFlow.vue'
 import HistoryFlow from '../modules/history/HistoryFlow.vue'
 import SettingsFlow from '../modules/settings/SettingsFlow.vue'
 import HelpFlow from '../modules/help/HelpFlow.vue'
+import UpdateDialog from './UpdateDialog.vue'
 import { useSettings } from '../composables/useSettings'
+import { useUpdates } from '../composables/useUpdates'
 import { onMounted, ref, watch } from 'vue'
 
 const nav = useNavigation()
 const { load: loadSettings } = useSettings()
+const { check: checkForUpdate } = useUpdates()
 
 const content = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   loadSettings()
+  // Startup check: pops the update dialog only when a newer release exists;
+  // network errors stay silent here (Settings shows them on a manual check).
+  checkForUpdate(true)
 })
 
 // All modules share this one scroll container, so without this a module opened
@@ -57,6 +63,7 @@ watch(
     </main>
 
     <BottomNav :active="nav.state.active" @select="nav.go" />
+    <UpdateDialog />
   </div>
 </template>
 

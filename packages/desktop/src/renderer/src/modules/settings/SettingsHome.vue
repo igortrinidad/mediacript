@@ -1,7 +1,42 @@
 <script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useUpdates } from '../../composables/useUpdates'
+
 const emit = defineEmits<{
   select: [view: 'api-keys' | 'fallback-ai' | 'general' | 'appearance']
 }>()
+
+const updates = useUpdates()
+
+onMounted(() => {
+  updates.loadCurrentVersion()
+})
+
+const updateStatus = computed(() => {
+  const { phase, update, error } = updates.state
+  switch (phase) {
+    case 'checking':
+      return 'Verificando…'
+    case 'up-to-date':
+      return 'Você está na versão mais recente.'
+    case 'available':
+    case 'downloading':
+    case 'ready':
+    case 'installing':
+      return update ? `Nova versão disponível: v${update.latestVersion}` : ''
+    case 'error':
+      return error ?? 'Falha ao verificar atualizações'
+    default:
+      return ''
+  }
+})
+
+const hasUpdate = computed(() => !!updates.state.update)
+
+function onCheck(): void {
+  if (hasUpdate.value) updates.openDialog()
+  else updates.check(true)
+}
 
 const ROWS = [
   { id: 'api-keys' as const, icon: '🔑', label: 'Chaves de API', description: 'Transcrição e IA — salvas só neste computador' },
@@ -24,6 +59,18 @@ const ROWS = [
         <span class="row-chevron">›</span>
       </li>
     </ul>
+
+    <footer class="about card">
+      <div class="about-text">
+        <div class="about-version">Mediacript v{{ updates.state.currentVersion || '…' }}</div>
+        <div class="about-status" :class="{ highlight: hasUpdate, error: updates.state.phase === 'error' }">
+          {{ updateStatus || 'Atualizações são verificadas ao abrir o app.' }}
+        </div>
+      </div>
+      <button class="btn" :class="{ 'btn-primary': hasUpdate }" :disabled="updates.state.phase === 'checking'" @click="onCheck">
+        {{ hasUpdate ? 'Atualizar' : 'Verificar atualizações' }}
+      </button>
+    </footer>
   </div>
 </template>
 
@@ -83,5 +130,40 @@ const ROWS = [
 .row-chevron {
   color: var(--text-muted);
   font-size: 18px;
+}
+
+.about {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-top: 8px;
+}
+
+.about-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.about-version {
+  font-weight: 600;
+  font-size: 14px;
+  /* Worth being able to copy into a bug report. */
+  user-select: text;
+}
+
+.about-status {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.about-status.highlight {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.about-status.error {
+  color: var(--danger);
 }
 </style>

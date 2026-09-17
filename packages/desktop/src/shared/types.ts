@@ -501,3 +501,46 @@ export interface MeetingControlWindowOptions {
   micEnabled: boolean
   systemAudioEnabled: boolean
 }
+
+// --- App updates ------------------------------------------------------------
+
+/**
+ * How the downloaded release asset gets installed on this OS:
+ * - `windows-installer`: run the NSIS .exe and quit; the installer replaces the app.
+ * - `mac-dmg`: a detached script waits for the app to quit, then mounts the .dmg,
+ *   copies the bundle over the current one, strips the Gatekeeper quarantine and relaunches.
+ * - `manual`: nothing to download for this platform; the user gets the release page.
+ */
+export type UpdateInstallMethod = 'windows-installer' | 'mac-dmg' | 'manual'
+
+export interface UpdateAsset {
+  name: string
+  url: string
+  size: number
+}
+
+export interface UpdateInfo {
+  currentVersion: string
+  latestVersion: string
+  releaseUrl: string
+  /** Release body from GitHub (markdown), when present */
+  releaseNotes: string
+  publishedAt: string | null
+  installMethod: UpdateInstallMethod
+  /** Asset matched to this OS/arch; absent when `installMethod` is `manual` */
+  asset: UpdateAsset | null
+}
+
+export interface UpdateCheckResult {
+  status: 'up-to-date' | 'available' | 'error'
+  currentVersion: string
+  update?: UpdateInfo
+  error?: string
+}
+
+export interface UpdateDownloadProgress {
+  received: number
+  total: number
+  /** 0–100, or -1 when the total size is unknown */
+  percent: number
+}

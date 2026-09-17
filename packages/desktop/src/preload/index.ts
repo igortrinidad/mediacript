@@ -43,7 +43,11 @@ import type {
   MeetingProgressEvent,
   MeetingRegenerateRequest,
   MeetingSummary,
-  MeetingTrack
+  MeetingTrack,
+  UpdateAsset,
+  UpdateCheckResult,
+  UpdateDownloadProgress,
+  UpdateInstallMethod
 } from '../shared/types'
 
 const api = {
@@ -62,6 +66,22 @@ const api = {
 
   compress: {
     run: (request: CompressRequest): Promise<CompressResult> => ipcRenderer.invoke('compress:run', request)
+  },
+
+  updates: {
+    currentVersion: (): Promise<string> => ipcRenderer.invoke('updates:currentVersion'),
+    check: (): Promise<UpdateCheckResult> => ipcRenderer.invoke('updates:check'),
+    /** Resolves with the local path of the downloaded installer/DMG */
+    download: (asset: UpdateAsset): Promise<string> => ipcRenderer.invoke('updates:download', asset),
+    /** Quits the app and hands over to the installer (or opens the release page when there is nothing to run) */
+    install: (method: UpdateInstallMethod, filePath: string | null): Promise<void> =>
+      ipcRenderer.invoke('updates:install', method, filePath),
+    openReleasePage: (url?: string): Promise<void> => ipcRenderer.invoke('updates:openReleasePage', url),
+    onProgress: (callback: (progress: UpdateDownloadProgress) => void): (() => void) => {
+      const listener = (_: unknown, progress: UpdateDownloadProgress) => callback(progress)
+      ipcRenderer.on('updates:progress', listener)
+      return () => ipcRenderer.removeListener('updates:progress', listener)
+    }
   },
 
   config: {
