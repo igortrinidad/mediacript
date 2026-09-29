@@ -32,6 +32,16 @@ import type {
   ScreencastProcessRequest,
   ScreencastProcessResult,
   ScreencastProgressEvent,
+  AdAnalyzeRequest,
+  AdChatMessage,
+  AdChatRequest,
+  AdItem,
+  AdLogLine,
+  AdProgressEvent,
+  AdProjectDetail,
+  AdProjectSummary,
+  AdSearchRequest,
+  SavedAd,
   MeetingAskRequest,
   MeetingAskResult,
   MeetingControlAction,
@@ -189,6 +199,32 @@ const api = {
       const listener = (_: unknown, action: ScreencastControlAction) => callback(action)
       ipcRenderer.on('screencast:controlAction', listener)
       return () => ipcRenderer.removeListener('screencast:controlAction', listener)
+    }
+  },
+
+  ads: {
+    listProjects: (): Promise<AdProjectSummary[]> => ipcRenderer.invoke('ads:listProjects'),
+    createProject: (input: { name: string; description?: string }): Promise<AdProjectDetail> =>
+      ipcRenderer.invoke('ads:createProject', input),
+    getProject: (projectId: string): Promise<AdProjectDetail> => ipcRenderer.invoke('ads:getProject', projectId),
+    deleteProject: (projectId: string, removeFiles: boolean): Promise<void> =>
+      ipcRenderer.invoke('ads:deleteProject', projectId, removeFiles),
+    search: (request: AdSearchRequest): Promise<AdItem[]> => ipcRenderer.invoke('ads:search', request),
+    saveAd: (projectId: string, ad: AdItem): Promise<AdProjectDetail> => ipcRenderer.invoke('ads:saveAd', projectId, ad),
+    removeAd: (projectId: string, adId: string): Promise<AdProjectDetail> =>
+      ipcRenderer.invoke('ads:removeAd', projectId, adId),
+    analyze: (request: AdAnalyzeRequest): Promise<SavedAd> => ipcRenderer.invoke('ads:analyze', request),
+    sendChatMessage: (request: AdChatRequest): Promise<AdChatMessage[]> => ipcRenderer.invoke('ads:chat:send', request),
+    clearChat: (projectId: string): Promise<void> => ipcRenderer.invoke('ads:chat:clear', projectId),
+    onProgress: (callback: (event: AdProgressEvent) => void): (() => void) => {
+      const listener = (_: unknown, event: AdProgressEvent) => callback(event)
+      ipcRenderer.on('ads:progress', listener)
+      return () => ipcRenderer.removeListener('ads:progress', listener)
+    },
+    onLog: (callback: (line: AdLogLine) => void): (() => void) => {
+      const listener = (_: unknown, line: AdLogLine) => callback(line)
+      ipcRenderer.on('ads:log', listener)
+      return () => ipcRenderer.removeListener('ads:log', listener)
     }
   },
 

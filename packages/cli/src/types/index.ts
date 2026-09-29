@@ -15,6 +15,10 @@ export interface Config {
   anthropicApiKey?: string
   geminiApiKey?: string
   openrouterApiKey?: string
+  /** Apify API token, used by the desktop app's winning-ads analyzer to pull ads from the Meta Ad Library */
+  apifyApiKey?: string
+  /** TypeSafe API key for the Jev typed-decision model, used by the desktop app's ads analyzer */
+  jevApiKey?: string
   /**
    * Optional root directory for generated files, used by GUI consumers (e.g. the
    * desktop app, which writes `<root>/<módulo>/<datetime>_<nome>.<ext>`). When

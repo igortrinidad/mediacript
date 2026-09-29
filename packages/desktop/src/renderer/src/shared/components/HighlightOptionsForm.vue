@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { modelOptionLabel } from '../modelLabel'
 import { computed } from 'vue'
 import { useSettings } from '../../composables/useSettings'
 import { CUSTOM_MODEL } from '../constants'
@@ -37,7 +38,7 @@ const selectedProvider = computed(() => settings.aiProviders.find((p) => p.provi
 
     <label for="hl-model">Modelo</label>
     <select id="hl-model" v-model="model.modelChoice">
-      <option v-for="m in selectedProvider?.models ?? []" :key="m" :value="m">{{ m }}</option>
+      <option v-for="m in selectedProvider?.models ?? []" :key="m" :value="m">{{ modelOptionLabel(m, selectedProvider?.pricing) }}</option>
       <option :value="CUSTOM_MODEL">✏️ Outro (digitar manualmente)</option>
     </select>
     <input v-if="model.modelChoice === CUSTOM_MODEL" v-model="model.customModel" type="text" placeholder="id do modelo" />

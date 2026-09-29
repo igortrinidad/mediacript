@@ -1,5 +1,5 @@
 import { ipcMain, nativeTheme } from 'electron'
-import { getStoredConfig, saveStoredConfig, getConfigDirectory, AI_MODELS_BY_PROVIDER, AI_PROVIDER_LABELS } from 'mediacript'
+import { getStoredConfig, saveStoredConfig, getConfigDirectory, AI_MODELS_BY_PROVIDER, AI_PROVIDER_LABELS, MODEL_PRICING } from 'mediacript'
 import { getDefaultOutputRoot, getOutputRoot } from '../lib/outputPaths'
 import type { AIProviderName, AIProviderOption, Config, OutputRootInfo } from '../../shared/types'
 
@@ -46,6 +46,7 @@ export function registerConfigIpc(): void {
       provider,
       label: AI_PROVIDER_LABELS[provider],
       models: [...AI_MODELS_BY_PROVIDER[provider]],
+      pricing: { ...MODEL_PRICING[provider] },
       hasApiKey: !!config[configKeyByProvider[provider]]
     }))
   })

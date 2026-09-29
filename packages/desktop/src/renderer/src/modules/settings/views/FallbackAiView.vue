@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { modelOptionLabel } from '../../../shared/modelLabel'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { AIProviderName, HighlightFallbackModel } from '@shared/types'
 import { useSettings } from '../../../composables/useSettings'
@@ -108,7 +109,7 @@ async function onSave(): Promise<void> {
       </select>
       <select v-model="newFallback.modelChoice">
         <option value="" disabled>Modelo…</option>
-        <option v-for="m in newFallbackProvider?.models ?? []" :key="m" :value="m">{{ m }}</option>
+        <option v-for="m in newFallbackProvider?.models ?? []" :key="m" :value="m">{{ modelOptionLabel(m, newFallbackProvider?.pricing) }}</option>
         <option :value="CUSTOM_MODEL">✏️ Outro (digitar manualmente)</option>
       </select>
       <input v-if="newFallback.modelChoice === CUSTOM_MODEL" v-model="newFallback.customModel" type="text" placeholder="id do modelo" />

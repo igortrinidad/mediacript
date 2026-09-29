@@ -44,7 +44,16 @@ import { saveSrtFile, getSrtOutputPath, loadSrtFile } from './subtitles/srt.js'
 import { extractHighlightsFromTranscript, applyHighlightMargin } from './highlights/index.js'
 import { continueHighlightChat, type HighlightChatMessage, type HighlightChatTurnResult } from './highlights/chat.js'
 import { generateThumbnailFrames, saveThumbnailPrompts, DEFAULT_THUMBNAIL_FRAME_COUNT } from './thumbnails/index.js'
-import { createAIProvider, AI_MODELS_BY_PROVIDER, AI_PROVIDER_LABELS, type AIProviderName } from './ai/index.js'
+import {
+  createAIProvider,
+  AI_MODELS_BY_PROVIDER,
+  AI_PROVIDER_LABELS,
+  MODEL_PRICING,
+  MODEL_PRICING_AS_OF,
+  getModelPrice,
+  type AIProviderName,
+  type ModelPrice
+} from './ai/index.js'
 import type { Config, TranscriptSegment, HighlightSegment, HighlightFallbackModel } from './types/index.js'
 
 export interface MediaScriptOptions {
@@ -129,8 +138,8 @@ export { EXPORT_FORMATS, QUALITY_PRESETS, getExportFormat, getQualityPreset }
 export type { ExportFormatId, ExportFormatDefinition, QualityPresetId, QualityPresetDefinition, FramingMode }
 
 // Re-export AI provider types/constants for convenience
-export { AI_MODELS_BY_PROVIDER, AI_PROVIDER_LABELS, createAIProvider }
-export type { AIProviderName, TranscriptSegment, HighlightSegment }
+export { AI_MODELS_BY_PROVIDER, AI_PROVIDER_LABELS, createAIProvider, MODEL_PRICING, MODEL_PRICING_AS_OF, getModelPrice }
+export type { AIProviderName, ModelPrice, TranscriptSegment, HighlightSegment }
 
 // Re-export the SRT writer for consumers that orchestrate their own transcribe+save
 // steps (e.g. a GUI wanting fine-grained per-step progress instead of generateSubtitles)
@@ -590,7 +599,7 @@ export async function compressVideoFile(
  * @example
  * await extractHighlightClips('interview.mp4', 'os 3 melhores momentos de humor', {
  *   provider: 'anthropic',
- *   model: 'claude-sonnet-5',
+ *   model: 'claude-sonnet-5-5',
  *   apiKey: process.env.ANTHROPIC_API_KEY!
  * }, { groqApiKey: process.env.GROQ_API_KEY, clipMarginSeconds: 2 })
  */

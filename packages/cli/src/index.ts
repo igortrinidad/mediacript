@@ -9,7 +9,7 @@ import { transcribeAudio, transcribeAudioWithSegments, saveTranscription } from 
 import { saveSrtFile } from './subtitles/srt.js'
 import { extractHighlightsFromTranscript } from './highlights/index.js'
 import { cutHighlightClipsWithAssets } from './lib.js'
-import { AI_MODELS_BY_PROVIDER, AI_PROVIDER_LABELS, type AIProviderName } from './ai/index.js'
+import { AI_MODELS_BY_PROVIDER, AI_PROVIDER_LABELS, getModelPrice, type AIProviderName } from './ai/index.js'
 import type { TranscriptSegment, HighlightSegment } from './types/index.js'
 import { runWizard, type WizardStep } from './cli/wizard.js'
 import {
@@ -407,7 +407,10 @@ function computeMainSteps(
       type: 'list',
       message: 'Qual modelo deseja usar?',
       choices: [
-        ...AI_MODELS_BY_PROVIDER[answers.aiProvider as AIProviderName].map((model) => ({ name: model, value: model })),
+        ...AI_MODELS_BY_PROVIDER[answers.aiProvider as AIProviderName].map((model) => {
+          const price = getModelPrice(answers.aiProvider as AIProviderName, model)
+          return { name: price ? `${model}  ($${price.input} in / $${price.output} out por 1M tokens)` : model, value: model }
+        }),
         { name: '✏️  Outro (digitar manualmente)', value: CUSTOM_MODEL_VALUE }
       ]
     })

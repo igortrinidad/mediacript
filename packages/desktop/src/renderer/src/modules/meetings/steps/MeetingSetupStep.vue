@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { modelOptionLabel } from '../../../shared/modelLabel'
 import { computed, onMounted, ref } from 'vue'
 import type { AIProviderName, MeetingCreateRequest, MeetingPlatformSupport, SystemAudioMode } from '@shared/types'
 import { useAgents } from '../../../composables/useAgents'
@@ -37,6 +38,7 @@ const customModel = ref('')
 const providerModels = computed(
   () => settings.aiProviders.find((option) => option.provider === provider.value)?.models ?? []
 )
+const providerPricing = computed(() => settings.aiProviders.find((option) => option.provider === provider.value)?.pricing)
 
 const monitorDevices = computed(() => devices.value.filter((device) => device.isMonitor))
 
@@ -209,7 +211,7 @@ function start(): void {
             </option>
           </select>
           <select v-model="modelChoice" class="device-select">
-            <option v-for="model in providerModels" :key="model" :value="model">{{ model }}</option>
+            <option v-for="model in providerModels" :key="model" :value="model">{{ modelOptionLabel(model, providerPricing) }}</option>
             <option :value="CUSTOM_MODEL">Outro modelo…</option>
           </select>
         </div>

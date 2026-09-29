@@ -2,6 +2,7 @@ import type {
   Config as MediacriptConfig,
   AIProviderName as MediacriptAIProviderName,
   HighlightFallbackModel as MediacriptHighlightFallbackModel,
+  ModelPrice as MediacriptModelPrice,
   HighlightSegment as MediacriptHighlightSegment,
   TranscriptSegment as MediacriptTranscriptSegment,
   ExportFormatId as MediacriptExportFormatId,
@@ -16,6 +17,7 @@ import type {
 export type Config = MediacriptConfig
 export type AIProviderName = MediacriptAIProviderName
 export type HighlightFallbackModel = MediacriptHighlightFallbackModel
+export type ModelPrice = MediacriptModelPrice
 export type HighlightSegment = MediacriptHighlightSegment
 export type TranscriptSegment = MediacriptTranscriptSegment
 export type ExportFormatId = MediacriptExportFormatId
@@ -57,6 +59,8 @@ export interface AIProviderOption {
   provider: AIProviderName
   label: string
   models: string[]
+  /** USD per 1M tokens, keyed by model id; models without a published price are absent */
+  pricing: Record<string, ModelPrice>
   hasApiKey: boolean
 }
 
@@ -543,4 +547,143 @@ export interface UpdateDownloadProgress {
   total: number
   /** 0–100, or -1 when the total size is unknown */
   percent: number
+}
+
+// --- Ads (winning ads analyzer) ----------------------------------------------
+
+export type AdMediaType = 'video' | 'image' | 'other'
+export type AdActiveStatus = 'active' | 'inactive' | 'all'
+export type AdMediaFilter = 'all' | 'video' | 'image'
+
+export type AdHookStyle = 'problem_agitate' | 'question' | 'bold_claim' | 'social_proof' | 'offer'
+export type AdOfferType = 'free_trial' | 'discount' | 'lead_magnet' | 'demo' | 'none'
+
+/** KPIs the Meta Ad Library exposes for an ad; most are absent outside EU/political ads, so all are optional except the basics. */
+export interface AdKpis {
+  isActive: boolean
+  /** ISO date the ad started running, when known */
+  startDate?: string
+  endDate?: string
+  daysRunning?: number
+  /** Number of near-identical variations grouped under this ad (Meta's `collationCount`) */
+  variations?: number
+  platforms: string[]
+  impressions?: string
+  reach?: number
+  spend?: string
+}
+
+/** An ad as returned by the Apify Meta Ad Library scraper, normalized. */
+export interface AdItem {
+  id: string
+  pageName: string
+  pageId?: string
+  mediaType: AdMediaType
+  body: string
+  title?: string
+  ctaText?: string
+  linkUrl?: string
+  videoUrl?: string
+  imageUrl?: string
+  thumbnailUrl?: string
+  libraryUrl: string
+  kpis: AdKpis
+}
+
+export interface AdSearchRequest {
+  keywords: string
+  /** Facebook page URLs (or Ad Library URLs) to pull ads from */
+  pageUrls: string[]
+  country: string
+  mediaType: AdMediaFilter
+  activeStatus: AdActiveStatus
+  limit: number
+}
+
+/**
+ * Structured read of one ad, produced by the model. `clear_cta` and
+ * `friction_low` are probabilities (0–1) and null when the model can't tell.
+ */
+export interface AdAnalysis {
+  hook: AdHookStyle
+  /** Schwartz awareness stage on a 0–4 scale. Jev returns a probability-weighted float; Gemini an integer. */
+  awareness: number
+  offer_type: AdOfferType
+  clear_cta: number | null
+  friction_low: number | null
+  /** Jev only: how concentrated the model's probability was on its pick (0–1). */
+  confidence?: { hook: number; awareness: number; offer_type: number }
+}
+
+export type AdAnalysisEngine = 'jev' | 'gemini'
+
+export type SavedAdStatus = 'saved' | 'analyzing' | 'analyzed' | 'failed'
+
+export interface SavedAd extends AdItem {
+  savedAt: string
+  status: SavedAdStatus
+  /** Speech transcript for videos, on-screen text for images */
+  transcript?: string
+  analysis?: AdAnalysis
+  analysisModel?: string
+  analysisEngine?: AdAnalysisEngine
+  analyzedAt?: string
+  error?: string
+  /** `mediacript-media:` URL of the thumbnail downloaded at save time (remote URLs expire) */
+  localThumbnailUrl?: string
+}
+
+export interface AdProjectSummary {
+  id: string
+  name: string
+  description?: string
+  adsCount: number
+  analyzedCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdProjectDetail extends AdProjectSummary {
+  ads: SavedAd[]
+  chat: AdChatMessage[]
+  folderPath: string
+}
+
+export interface AdAnalyzeRequest {
+  projectId: string
+  adId: string
+  engine: AdAnalysisEngine
+  /** Gemini model for the `gemini` engine, or for reading text off image ads with `jev`. */
+  model: string
+}
+
+export interface AdProgressEvent {
+  projectId: string
+  adId: string
+  step: string
+  status: 'running' | 'completed' | 'failed'
+  detail?: string
+}
+
+export interface AdLogLine {
+  projectId: string
+  adId: string
+  level: 'log' | 'warn' | 'error' | 'progress'
+  text: string
+  timestamp: string
+}
+
+export interface AdChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+  createdAt: string
+}
+
+export interface AdChatRequest {
+  projectId: string
+  message: string
+  provider: AIProviderName
+  model: string
+  /** Ads the model may draw on; empty/absent means every analyzed ad in the project. */
+  adIds?: string[]
 }

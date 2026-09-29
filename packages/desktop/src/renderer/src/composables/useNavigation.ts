@@ -5,6 +5,7 @@ export type ModuleId =
   | 'chat'
   | 'agents'
   | 'meetings'
+  | 'ads'
   | 'convert'
   | 'compress'
   | 'screencast'

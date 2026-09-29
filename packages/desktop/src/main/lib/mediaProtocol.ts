@@ -1,8 +1,22 @@
 import { protocol } from 'electron'
 import fs from 'node:fs'
+import path from 'node:path'
 import { Readable } from 'node:stream'
 
 export const MEDIA_PROTOCOL_SCHEME = 'mediacript-media'
+
+const CONTENT_TYPES: Record<string, string> = {
+  '.mp3': 'audio/mpeg',
+  '.mp4': 'video/mp4',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp'
+}
+
+function contentTypeFor(filePath: string): string {
+  return CONTENT_TYPES[path.extname(filePath).toLowerCase()] ?? 'audio/mpeg'
+}
 
 // Must run at module load time (before `app.whenReady()`), which is when
 // this file gets imported from `main/index.ts` — Electron requires
@@ -28,8 +42,8 @@ protocol.registerSchemesAsPrivileged([
  * `<audio>` element's `currentTime` seeks silently fail (they reset to 0
  * instead of landing where requested).
  *
- * Only serves mp3 (the only format `extractAudio` produces); revisit the
- * hardcoded content type if this ever needs to serve other media too.
+ * The content type comes from the file extension (mp3 by default, plus the
+ * mp4/image files the ads analyzer downloads).
  */
 export function registerMediaProtocol(): void {
   protocol.handle(MEDIA_PROTOCOL_SCHEME, async (request) => {
@@ -41,7 +55,7 @@ export function registerMediaProtocol(): void {
       return new Response(Readable.toWeb(fs.createReadStream(filePath)) as ReadableStream, {
         status: 200,
         headers: {
-          'content-type': 'audio/mpeg',
+          'content-type': contentTypeFor(filePath),
           'content-length': String(stat.size),
           'accept-ranges': 'bytes'
         }
@@ -56,7 +70,7 @@ export function registerMediaProtocol(): void {
     return new Response(Readable.toWeb(fs.createReadStream(filePath, { start, end })) as ReadableStream, {
       status: 206,
       headers: {
-        'content-type': 'audio/mpeg',
+        'content-type': contentTypeFor(filePath),
         'content-range': `bytes ${start}-${end}/${stat.size}`,
         'content-length': String(chunkSize),
         'accept-ranges': 'bytes'

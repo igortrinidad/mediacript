@@ -14,7 +14,7 @@ import { getStoredConfig } from 'mediacript'
  * be pointed somewhere else by the user in Settings › Geral — `defaultOutputDir`
  * replaces only the root, the per-module folders and the datetime naming stay.
  */
-export type OutputFeature = 'convert' | 'compress' | 'subtitle' | 'highlights' | 'meetings' | 'screencast'
+export type OutputFeature = 'convert' | 'compress' | 'subtitle' | 'highlights' | 'meetings' | 'screencast' | 'ads'
 
 const FEATURE_FOLDERS: Record<OutputFeature, string> = {
   convert: 'Convert',
@@ -22,7 +22,8 @@ const FEATURE_FOLDERS: Record<OutputFeature, string> = {
   subtitle: 'Subtitle',
   highlights: 'Highlights',
   meetings: 'Meetings',
-  screencast: 'Screencast'
+  screencast: 'Screencast',
+  ads: 'Ads'
 }
 
 /** Folder created inside the user's Documents when no custom root is configured. */

@@ -22,6 +22,7 @@ import { registerHighlightChatIpc } from './ipc/highlightChat'
 import { registerAgentsIpc } from './ipc/agents'
 import { registerScreencastIpc } from './ipc/screencast'
 import { registerMeetingsIpc } from './ipc/meetings'
+import { registerAdsIpc } from './ipc/ads'
 import { registerUpdatesIpc } from './ipc/updates'
 import { registerMediaProtocol } from './lib/mediaProtocol'
 import { fixShellPath } from './lib/shellPath'
@@ -84,6 +85,7 @@ app.whenReady().then(() => {
   registerAgentsIpc()
   registerScreencastIpc()
   registerMeetingsIpc()
+  registerAdsIpc()
   registerUpdatesIpc()
 
   createWindow()

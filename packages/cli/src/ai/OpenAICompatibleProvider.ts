@@ -21,13 +21,18 @@ export abstract class OpenAICompatibleProvider extends BaseAIProvider {
     })
   }
 
-  protected async invokeLLM(): Promise<void> {
-    const { data } = await this.axiosInstance.post('/chat/completions', {
+  /** Overridable so a provider can adapt parameter names/support to the model family (see OpenAIProvider). */
+  protected buildRequestBody(): Record<string, unknown> {
+    return {
       model: this.model,
       max_tokens: this.maxTokens,
       temperature: this.temperature,
       messages: this.messages.map((message) => ({ role: message.role, content: message.content }))
-    })
+    }
+  }
+
+  protected async invokeLLM(): Promise<void> {
+    const { data } = await this.axiosInstance.post('/chat/completions', this.buildRequestBody())
 
     this.response = data
   }

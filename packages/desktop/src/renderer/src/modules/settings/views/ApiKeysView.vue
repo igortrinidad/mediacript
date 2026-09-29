@@ -9,7 +9,7 @@ const emit = defineEmits<{
 
 const { state: settings, load, save } = useSettings()
 
-type ApiKeyField = 'groqApiKey' | 'openaiApiKey' | 'anthropicApiKey' | 'geminiApiKey' | 'openrouterApiKey'
+type ApiKeyField = 'groqApiKey' | 'openaiApiKey' | 'anthropicApiKey' | 'geminiApiKey' | 'openrouterApiKey' | 'apifyApiKey' | 'jevApiKey'
 
 interface KeyFieldMeta {
   key: ApiKeyField
@@ -28,12 +28,19 @@ const highlightFields: KeyFieldMeta[] = [
   { key: 'openrouterApiKey', label: 'OpenRouter API Key', placeholder: 'sk-or-...' }
 ]
 
+const adsFields: KeyFieldMeta[] = [
+  { key: 'jevApiKey', label: 'TypeSafe (Jev) API Key', placeholder: 'ts_...' },
+  { key: 'apifyApiKey', label: 'Apify API Token', placeholder: 'apify_api_...' }
+]
+
 const fields = reactive<Record<ApiKeyField, { value: string; configured: boolean; cleared: boolean }>>({
   groqApiKey: { value: '', configured: false, cleared: false },
   openaiApiKey: { value: '', configured: false, cleared: false },
   anthropicApiKey: { value: '', configured: false, cleared: false },
   geminiApiKey: { value: '', configured: false, cleared: false },
-  openrouterApiKey: { value: '', configured: false, cleared: false }
+  openrouterApiKey: { value: '', configured: false, cleared: false },
+  apifyApiKey: { value: '', configured: false, cleared: false },
+  jevApiKey: { value: '', configured: false, cleared: false }
 })
 
 const saving = ref(false)
@@ -143,6 +150,30 @@ async function onSave(): Promise<void> {
         </div>
       </div>
       <p class="hint">Groq e OpenAI acima também podem ser usados para escolher os destaques.</p>
+    </div>
+
+    <div class="field-group">
+      <h3>Analisador de ads (Meta Ad Library)</h3>
+      <div v-for="field in adsFields" :key="field.key" class="key-field">
+        <div class="key-field-header">
+          <label :for="field.key">{{ field.label }}</label>
+          <span v-if="fields[field.key].cleared" class="badge badge-cleared">será removida</span>
+          <span v-else-if="fields[field.key].configured" class="badge badge-ok">✓ configurada</span>
+        </div>
+        <div class="key-field-row">
+          <input
+            :id="field.key"
+            v-model="fields[field.key].value"
+            type="password"
+            :disabled="fields[field.key].cleared"
+            :placeholder="fields[field.key].configured ? maskKey(settings.config[field.key]) : field.placeholder"
+          />
+          <button v-if="fields[field.key].configured" class="btn btn-ghost" type="button" @click="toggleClear(field.key)">
+            {{ fields[field.key].cleared ? 'Desfazer' : 'Remover' }}
+          </button>
+        </div>
+      </div>
+      <p class="hint">Apify busca os anúncios na Meta Ad Library. Jev (TypeSafe) classifica cada anúncio com probabilidades e confiança; a chave do Gemini acima serve como motor alternativo e para ler o texto de anúncios em imagem.</p>
     </div>
 
     <button class="btn btn-primary" :disabled="saving" @click="onSave">Salvar</button>

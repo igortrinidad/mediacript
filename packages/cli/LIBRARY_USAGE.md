@@ -194,7 +194,7 @@ const highlights = await extractVideoHighlights(
   'os 3 melhores momentos de humor da entrevista',
   {
     provider: 'anthropic', // 'anthropic' | 'gemini' | 'openrouter'
-    model: 'claude-sonnet-5',
+    model: 'claude-sonnet-5-5',
     apiKey: process.env.ANTHROPIC_API_KEY
   }
 )
@@ -215,7 +215,7 @@ const result = await extractHighlightClips(
   'os 3 melhores momentos de humor da entrevista',
   {
     provider: 'gemini',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.8-flash',
     apiKey: process.env.GEMINI_API_KEY
   },
   { outputDir: './output' }
@@ -233,10 +233,10 @@ import { AI_MODELS_BY_PROVIDER, AI_PROVIDER_LABELS } from 'mediacript'
 
 console.log(AI_MODELS_BY_PROVIDER)
 // {
-//   anthropic: ['claude-opus-4-8', 'claude-sonnet-5', 'claude-haiku-4-5-20251001', 'claude-fable-5'],
-//   gemini: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3-flash-preview'],
-//   openrouter: ['anthropic/claude-sonnet-4.5', 'google/gemini-2.5-flash', 'openai/gpt-4o-mini', ...],
-//   openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini'],
+//   anthropic: ['claude-fable-5-1', 'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-opus-4-8', 'claude-sonnet-5', ...],
+//   gemini: ['gemini-3.8-flash', 'gemini-3.1-pro-preview', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-pro', ...],
+//   openrouter: ['anthropic/claude-sonnet-5.5', 'anthropic/claude-sonnet-4.5', 'google/gemini-2.5-flash', ...],
+//   openai: ['gpt-6-astra', 'gpt-6-sol', 'gpt-6-luna', 'gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini'],
 //   groq: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'openai/gpt-oss-120b', ...]
 // }
 ```

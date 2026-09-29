@@ -6,6 +6,7 @@ import HomeFlow from '../modules/home/HomeFlow.vue'
 import ChatFlow from '../modules/chat/ChatFlow.vue'
 import AgentsFlow from '../modules/agents/AgentsFlow.vue'
 import MeetingsFlow from '../modules/meetings/MeetingsFlow.vue'
+import AdsFlow from '../modules/ads/AdsFlow.vue'
 import ConvertFlow from '../modules/convert/ConvertFlow.vue'
 import CompressFlow from '../modules/compress/CompressFlow.vue'
 import ScreencastFlow from '../modules/screencast/ScreencastFlow.vue'
@@ -53,6 +54,7 @@ watch(
       <ChatFlow v-show="nav.state.active === 'chat'" />
       <AgentsFlow v-if="nav.state.active === 'agents'" />
       <MeetingsFlow v-if="nav.state.active === 'meetings'" />
+      <AdsFlow v-if="nav.state.active === 'ads'" />
       <ConvertFlow v-if="nav.state.active === 'convert'" />
       <CompressFlow v-if="nav.state.active === 'compress'" />
       <ScreencastFlow v-if="nav.state.active === 'screencast'" />
