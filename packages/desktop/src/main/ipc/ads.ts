@@ -1,7 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { getStoredConfig } from 'mediacript'
 import { searchAds } from '../lib/apifyAds'
-import { analyzeAd } from '../lib/adAnalyzer'
+import { analyzeAd, transcribeAd } from '../lib/adAnalyzer'
 import { clearAdChat, sendAdChatMessage } from '../lib/adChat'
 import {
   createProject,
@@ -57,6 +57,19 @@ export function registerAdsIpc(): void {
     const { projectId, adId } = request
 
     return analyzeAd(projectId, adId, request.engine, request.model, {
+      onLog: (line) => {
+        window?.webContents.send('ads:log', { projectId, adId, ...line, timestamp: new Date().toISOString() })
+      },
+      onProgress: (progress) => {
+        window?.webContents.send('ads:progress', { projectId, adId, ...progress })
+      }
+    })
+  })
+
+  ipcMain.handle('ads:transcribe', async (event, projectId: string, adId: string): Promise<SavedAd> => {
+    const window = BrowserWindow.fromWebContents(event.sender)
+
+    return transcribeAd(projectId, adId, {
       onLog: (line) => {
         window?.webContents.send('ads:log', { projectId, adId, ...line, timestamp: new Date().toISOString() })
       },

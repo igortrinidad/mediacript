@@ -111,6 +111,10 @@ const api = {
     listAIProviders: (): Promise<AIProviderOption[]> => ipcRenderer.invoke('config:listAIProviders')
   },
 
+  clipboard: {
+    writeText: (text: string): Promise<void> => ipcRenderer.invoke('clipboard:writeText', text)
+  },
+
   files: {
     pickFiles: (): Promise<string[]> => ipcRenderer.invoke('files:pick'),
     pickDirectory: (): Promise<string | null> => ipcRenderer.invoke('files:pickDirectory'),
@@ -222,6 +226,7 @@ const api = {
     removeAd: (projectId: string, adId: string): Promise<AdProjectDetail> =>
       ipcRenderer.invoke('ads:removeAd', projectId, adId),
     analyze: (request: AdAnalyzeRequest): Promise<SavedAd> => ipcRenderer.invoke('ads:analyze', request),
+    transcribe: (projectId: string, adId: string): Promise<SavedAd> => ipcRenderer.invoke('ads:transcribe', projectId, adId),
     sendChatMessage: (request: AdChatRequest): Promise<AdChatMessage[]> => ipcRenderer.invoke('ads:chat:send', request),
     clearChat: (projectId: string): Promise<void> => ipcRenderer.invoke('ads:chat:clear', projectId),
     onProgress: (callback: (event: AdProgressEvent) => void): (() => void) => {

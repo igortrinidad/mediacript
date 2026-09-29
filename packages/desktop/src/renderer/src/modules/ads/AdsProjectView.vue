@@ -7,6 +7,8 @@ import { toPlain } from '../../shared/toPlain'
 import AdCard from './AdCard.vue'
 import AdSearchPanel from './AdSearchPanel.vue'
 import AdsChatPanel from './AdsChatPanel.vue'
+import { useClipboard } from '../../composables/useClipboard'
+import { formatAllAds } from './adDetails'
 import { AWARENESS_LABELS, HOOK_LABELS, OFFER_LABELS } from './labels'
 
 const props = defineProps<{
@@ -18,6 +20,7 @@ const emit = defineEmits<{
 }>()
 
 const { state: settings, load: loadSettings } = useSettings()
+const { copiedKey, copy } = useClipboard()
 
 const project = ref<AdProjectDetail | null>(null)
 const tab = ref<'saved' | 'search' | 'chat'>('saved')
@@ -90,6 +93,19 @@ async function analyze(adId: string): Promise<void> {
     await window.api.ads.analyze({ projectId: props.projectId, adId, engine: engine.value, model: model.value })
   } catch (err: any) {
     error.value = err?.message || 'Falha ao analisar o anúncio'
+  } finally {
+    delete progress[adId]
+    await reload()
+  }
+}
+
+async function transcribe(adId: string): Promise<void> {
+  error.value = ''
+  progress[adId] = 'Iniciando…'
+  try {
+    await window.api.ads.transcribe(props.projectId, adId)
+  } catch (err: any) {
+    error.value = err?.message || 'Falha ao transcrever o anúncio'
   } finally {
     delete progress[adId]
     await reload()
@@ -216,6 +232,9 @@ function percent(value: number | null): string {
             <option v-for="m in geminiModels" :key="m" :value="m">{{ modelOptionLabel(m, geminiPricing) }}</option>
           </select>
         </template>
+        <button class="btn" type="button" @click="copy('all-ads', formatAllAds(project.ads))">
+          {{ copiedKey === 'all-ads' ? 'Copiado!' : '📋 Copiar todos' }}
+        </button>
         <button
           class="btn btn-primary"
           type="button"
@@ -231,13 +250,15 @@ function percent(value: number | null): string {
       </p>
 
       <AdCard
-        v-for="ad in project?.ads ?? []"
+        v-for="(ad, index) in project?.ads ?? []"
         :key="ad.id"
         :ad="ad"
         mode="saved"
+        :index="index"
         :busy="!!progress[ad.id]"
         :progress-text="progress[ad.id]"
         @analyze="analyze(ad.id)"
+        @transcribe="transcribe(ad.id)"
         @remove="removeAd(ad.id)"
       />
     </div>

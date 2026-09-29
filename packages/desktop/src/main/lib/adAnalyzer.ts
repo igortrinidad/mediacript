@@ -295,6 +295,75 @@ async function callJev(apiKey: string, ad: SavedAd, transcript?: string, imageTe
   }
 }
 
+/** Whisper transcript of a downloaded ad video (audio is extracted to a temp mp3 and removed afterwards). */
+async function transcribeVideoFile(
+  folderPath: string,
+  adId: string,
+  videoPath: string,
+  callbacks: AdAnalyzerCallbacks
+): Promise<string> {
+  const mp3Path = path.join(folderPath, `${adId}_audio.mp3`)
+  try {
+    const mp3 = await toTranscriptionAudio(videoPath, mp3Path, (line) => callbacks.onLog?.({ level: 'progress', text: line }))
+    const result = await transcribeAudioFile(mp3)
+    if (!result) throw new Error('Verifique as API keys do Groq/OpenAI em Settings.')
+    return result.text.trim()
+  } finally {
+    fs.rmSync(mp3Path, { force: true })
+  }
+}
+
+/**
+ * Gets just the transcript of a saved ad, without running an analysis: the
+ * speech of a video (Whisper) or the on-screen text of an image (Gemini OCR).
+ * Lets the user read and copy an ad's transcript before deciding to analyze it.
+ */
+export async function transcribeAd(
+  projectId: string,
+  adId: string,
+  callbacks: AdAnalyzerCallbacks = {}
+): Promise<SavedAd> {
+  const project = loadProject(projectId)
+  const ad = project.ads.find((entry) => entry.id === adId)
+  if (!ad) throw new Error('Anúncio não encontrado neste projeto.')
+
+  const config = getStoredConfig()
+  const stopCapture = callbacks.onLog ? captureConsole(callbacks.onLog) : undefined
+  const step = async <T>(name: string, run: () => Promise<T>): Promise<T> => {
+    callbacks.onProgress?.({ step: name, status: 'running' })
+    try {
+      const result = await run()
+      callbacks.onProgress?.({ step: name, status: 'completed' })
+      return result
+    } catch (error) {
+      callbacks.onProgress?.({ step: name, status: 'failed', detail: (error as Error).message })
+      throw error
+    }
+  }
+
+  try {
+    let transcript = ''
+
+    if (ad.mediaType === 'video' && ad.videoUrl) {
+      const videoUrl = ad.videoUrl
+      const videoPath = await step('Baixando vídeo', () => downloadAsset(videoUrl, assetPath(project, ad.id, 'video', videoUrl)))
+      transcript = await step('Transcrevendo o áudio', () => transcribeVideoFile(project.folderPath, ad.id, videoPath, callbacks))
+    } else if (ad.mediaType === 'image' && (ad.imageUrl ?? ad.thumbnailUrl)) {
+      if (!config.geminiApiKey) throw new Error('Configure a API key da Google Gemini em Settings para ler o texto de anúncios em imagem.')
+      const imageUrl = (ad.imageUrl ?? ad.thumbnailUrl)!
+      const imagePath = await step('Baixando imagem do criativo', () => downloadAsset(imageUrl, assetPath(project, ad.id, 'image', imageUrl)))
+      transcript = await step('Lendo o texto da imagem', () => extractImageText(config.geminiApiKey!, imagePath))
+    } else {
+      throw new Error('Este anúncio não tem vídeo nem imagem para transcrever.')
+    }
+
+    const updated = updateAd(projectId, adId, { transcript: transcript || undefined })
+    return updated.ads.find((entry) => entry.id === adId)!
+  } finally {
+    stopCapture?.()
+  }
+}
+
 /**
  * Analyzes one saved ad: pulls its assets, gets a transcript (Whisper for video
  * audio), then produces the structured payload with the chosen engine:
@@ -356,15 +425,7 @@ export async function analyzeAd(
       )
 
       try {
-        transcript = await step('Transcrevendo o áudio', async () => {
-          const mp3 = await toTranscriptionAudio(videoPath, path.join(project.folderPath, `${ad.id}_audio.mp3`), (line) =>
-            callbacks.onLog?.({ level: 'progress', text: line })
-          )
-          const result = await transcribeAudioFile(mp3)
-          if (!result) throw new Error('Verifique as API keys do Groq/OpenAI em Settings.')
-          return result.text.trim()
-        })
-        fs.rmSync(path.join(project.folderPath, `${ad.id}_audio.mp3`), { force: true })
+        transcript = await step('Transcrevendo o áudio', () => transcribeVideoFile(project.folderPath, ad.id, videoPath, callbacks))
       } catch (error) {
         console.warn(`⚠️ Sem transcrição para este anúncio (${(error as Error).message}). Analisando só com texto e imagem.`)
       }

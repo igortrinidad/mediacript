@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, BrowserWindow, type IpcMainInvokeEvent } from 'electron'
+import { ipcMain, dialog, shell, clipboard, BrowserWindow, type IpcMainInvokeEvent } from 'electron'
 
 const MEDIA_EXTENSIONS = ['mp4', 'mov', 'mkv', 'webm', 'avi', 'ogg', 'wav', 'mp3', 'm4a', 'aac', 'flac']
 
@@ -11,6 +11,12 @@ function windowFromEvent(event: IpcMainInvokeEvent): BrowserWindow {
 }
 
 export function registerFilesIpc(): void {
+  // The renderer can't use `navigator.clipboard`: the session's permission handler (main/index.ts)
+  // denies everything but `media`, which includes clipboard-write. Electron's own clipboard needs no permission.
+  ipcMain.handle('clipboard:writeText', (_event, text: string): void => {
+    clipboard.writeText(String(text))
+  })
+
   ipcMain.handle('files:pick', async (event): Promise<string[]> => {
     const result = await dialog.showOpenDialog(windowFromEvent(event), {
       title: 'Selecionar vídeos ou áudios',

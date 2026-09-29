@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, type DeepReadonly } from 'vue'
 import type { AdItem, SavedAd } from '@shared/types'
+import { useClipboard } from '../../composables/useClipboard'
+import { formatAdDetails } from './adDetails'
 import { AWARENESS_LABELS, HOOK_LABELS, OFFER_LABELS } from './labels'
 
 const props = defineProps<{
@@ -8,6 +10,8 @@ const props = defineProps<{
   /** `search`: result not in the project yet. `saved`: lives in the project and can be analyzed. */
   mode: 'search' | 'saved'
   alreadySaved?: boolean
+  /** Position in the project list — the label used in copied details and in the chat ("Anúncio 3"). */
+  index?: number
   busy?: boolean
   progressText?: string
 }>()
@@ -16,7 +20,10 @@ const emit = defineEmits<{
   save: []
   remove: []
   analyze: []
+  transcribe: []
 }>()
+
+const { copiedKey, copy } = useClipboard()
 
 const saved = computed(() => (props.mode === 'saved' ? (props.ad as DeepReadonly<SavedAd>) : null))
 const thumbnail = computed(() => saved.value?.localThumbnailUrl ?? props.ad.thumbnailUrl)
@@ -78,8 +85,11 @@ function openLibrary(): void {
 
       <p v-if="saved?.analysisEngine" class="engine">Analisado com {{ saved.analysisEngine === 'jev' ? 'Jev' : 'Gemini' }} ({{ saved.analysisModel }})</p>
 
-      <details v-if="saved?.transcript" class="transcript">
+      <details v-if="saved?.transcript" class="transcript" open>
         <summary>{{ ad.mediaType === 'video' ? 'Transcrição do vídeo' : 'Texto extraído da imagem' }}</summary>
+        <button class="btn btn-ghost small copy-inline" type="button" @click="copy('transcript', saved.transcript)">
+          {{ copiedKey === 'transcript' ? 'Copiado!' : 'Copiar transcrição' }}
+        </button>
         <p>{{ saved.transcript }}</p>
       </details>
 
@@ -88,12 +98,24 @@ function openLibrary(): void {
 
       <footer>
         <button class="btn btn-ghost small" type="button" @click="openLibrary">Ver na Ad Library ↗</button>
+        <button class="btn small" type="button" @click="copy('details', formatAdDetails(ad, index))">
+          {{ copiedKey === 'details' ? 'Copiado!' : '📋 Copiar detalhes' }}
+        </button>
         <template v-if="mode === 'search'">
           <button class="btn btn-primary small" type="button" :disabled="alreadySaved || busy" @click="emit('save')">
             {{ alreadySaved ? '✓ Salvo' : busy ? 'Salvando…' : '+ Salvar no projeto' }}
           </button>
         </template>
         <template v-else>
+          <button
+            v-if="!saved?.transcript && ad.mediaType !== 'other'"
+            class="btn btn-ghost small"
+            type="button"
+            :disabled="busy"
+            @click="emit('transcribe')"
+          >
+            {{ ad.mediaType === 'video' ? 'Transcrever' : 'Ler texto da imagem' }}
+          </button>
           <button class="btn small" type="button" :disabled="busy" @click="emit('analyze')">
             {{ saved?.status === 'analyzed' ? 'Reanalisar' : 'Analisar' }}
           </button>
@@ -248,6 +270,10 @@ header {
   max-height: 160px;
   overflow-y: auto;
   user-select: text;
+}
+
+.copy-inline {
+  margin-top: 4px;
 }
 
 .progress {

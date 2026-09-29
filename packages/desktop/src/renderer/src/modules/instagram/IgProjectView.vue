@@ -7,6 +7,7 @@ import { useClipboard } from '../../composables/useClipboard'
 import { renderMarkdown } from '../../shared/markdown'
 import IgChatPanel from './IgChatPanel.vue'
 import IgPostCard from './IgPostCard.vue'
+import { formatAllPosts } from './postDetails'
 
 const props = defineProps<{
   projectId: string
@@ -187,6 +188,9 @@ function compact(value?: number): string {
     <div v-show="tab === 'posts'" class="posts">
       <div v-if="project?.posts.length" class="posts-bar">
         <span class="hint">{{ project.transcribedCount }} de {{ project.posts.filter(isVideo).length }} vídeo(s) transcrito(s)</span>
+        <button class="btn small" type="button" @click="copy('all-posts', formatAllPosts(project.posts, project.profile))">
+          {{ copiedKey === 'all-posts' ? 'Copiado!' : '📋 Copiar todos os posts' }}
+        </button>
         <button
           class="btn btn-primary small"
           type="button"
@@ -204,7 +208,7 @@ function compact(value?: number): string {
         :key="post.id"
         :post="post"
         :index="index"
-        :followers="project?.profile.followers"
+        :profile="project?.profile"
         :busy="transcribing || !hasTranscriptionKey"
         :progress-text="progress[post.id]"
         @transcribe="transcribe([post.id])"

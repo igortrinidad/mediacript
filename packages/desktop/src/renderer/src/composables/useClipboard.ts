@@ -10,15 +10,16 @@ export function useClipboard(feedbackMs = 1500) {
 
   async function copy(key: string, text: string): Promise<void> {
     try {
-      await navigator.clipboard.writeText(text)
+      // Through the main process: the browser clipboard API is blocked by the app's permission handler.
+      await window.api.clipboard.writeText(text)
       copiedKey.value = key
       setTimeout(() => {
         if (copiedKey.value === key) copiedKey.value = null
       }, feedbackMs)
-    } catch {
-      // Clipboard access can fail (e.g. no secure context); the error text is
-      // still manually selectable as a fallback (see the `user-select` override
-      // on error elements).
+    } catch (error) {
+      // Never fail silently — a button that does nothing looks broken. The error text is
+      // still manually selectable as a fallback (see the `user-select` override on error elements).
+      console.error('Falha ao copiar para a área de transferência:', error)
     }
   }
 

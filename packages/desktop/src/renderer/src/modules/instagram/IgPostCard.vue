@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed, type DeepReadonly } from 'vue'
-import type { IgPost } from '@shared/types'
+import { computed, ref, type DeepReadonly } from 'vue'
+import type { IgPost, IgProfile } from '@shared/types'
+import { useClipboard } from '../../composables/useClipboard'
+import { formatPostDetails } from './postDetails'
 
 const props = defineProps<{
   post: DeepReadonly<IgPost>
   index: number
-  followers?: number
+  /** Profile the post belongs to — adds the username and engagement rate to the copied details. */
+  profile?: DeepReadonly<Pick<IgProfile, 'username' | 'followers'>>
   busy?: boolean
   progressText?: string
 }>()
@@ -21,12 +24,16 @@ const TYPE_LABELS: Record<IgPost['type'], string> = {
   image: '🖼️ Imagem'
 }
 
+const { copiedKey, copy } = useClipboard()
+const captionExpanded = ref(false)
+
 const isVideo = computed(() => props.post.type === 'reel' || props.post.type === 'video')
 const thumbnail = computed(() => props.post.localThumbnailUrl ?? props.post.displayUrl)
 
 const engagement = computed(() => {
-  if (!props.followers || props.post.likes === undefined) return null
-  return (((props.post.likes + (props.post.comments ?? 0)) / props.followers) * 100).toFixed(2)
+  const followers = props.profile?.followers
+  if (!followers || props.post.likes === undefined) return null
+  return (((props.post.likes + (props.post.comments ?? 0)) / followers) * 100).toFixed(2)
 })
 
 function fmt(value?: number): string {
@@ -52,7 +59,14 @@ function openPost(): void {
         <span v-if="post.postedAt" class="date">{{ new Date(post.postedAt).toLocaleDateString('pt-BR') }}</span>
       </header>
 
-      <p class="caption">{{ post.caption || '(sem legenda)' }}</p>
+      <p
+        class="caption"
+        :class="{ expanded: captionExpanded }"
+        :title="captionExpanded ? 'Recolher legenda' : 'Ver legenda completa'"
+        @click="captionExpanded = !captionExpanded"
+      >
+        {{ post.caption || '(sem legenda)' }}
+      </p>
 
       <ul class="kpis">
         <li>❤️ {{ fmt(post.likes) }}</li>
@@ -66,6 +80,9 @@ function openPost(): void {
 
       <details v-if="post.transcript" class="transcript">
         <summary>Transcrição da fala</summary>
+        <button class="btn btn-ghost small copy-inline" type="button" @click="copy('transcript', post.transcript)">
+          {{ copiedKey === 'transcript' ? 'Copiado!' : 'Copiar transcrição' }}
+        </button>
         <p>{{ post.transcript }}</p>
       </details>
 
@@ -74,6 +91,12 @@ function openPost(): void {
 
       <footer>
         <button class="btn btn-ghost small" type="button" @click="openPost">Abrir no Instagram ↗</button>
+        <button class="btn small" type="button" @click="copy('details', formatPostDetails(post, index, profile))">
+          {{ copiedKey === 'details' ? 'Copiado!' : '📋 Copiar detalhes' }}
+        </button>
+        <button v-if="post.caption" class="btn btn-ghost small" type="button" @click="copy('caption', post.caption)">
+          {{ copiedKey === 'caption' ? 'Copiado!' : 'Copiar legenda' }}
+        </button>
         <button v-if="isVideo" class="btn small" type="button" :disabled="busy" @click="emit('transcribe')">
           {{ post.transcript ? 'Transcrever de novo' : 'Transcrever' }}
         </button>
@@ -152,6 +175,13 @@ header {
   -webkit-box-orient: vertical;
   overflow: hidden;
   white-space: pre-wrap;
+  cursor: pointer;
+  user-select: text;
+}
+
+.caption.expanded {
+  display: block;
+  -webkit-line-clamp: unset;
 }
 
 .kpis {
@@ -190,6 +220,10 @@ header {
   color: var(--text-muted);
 }
 
+.copy-inline {
+  margin-top: 4px;
+}
+
 .progress {
   margin: 0;
   font-size: 12px;
@@ -204,6 +238,7 @@ header {
 
 footer {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: auto;
 }
