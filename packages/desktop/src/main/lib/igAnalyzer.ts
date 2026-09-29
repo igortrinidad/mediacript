@@ -1,11 +1,10 @@
 import fs from 'fs'
-import { transcribeAudioFile } from 'mediacript'
 import { captureConsole, type ConsoleLogLine } from './consoleCapture'
-import { toTranscriptionAudio } from './meetingAudio'
+import { transcribeVideo } from './videoTranscriber'
 import { downloadAsset } from './adProjectStore'
-import { audioPath, loadProject, updatePost, updateProject, videoPath } from './igProjectStore'
+import { loadProject, updatePost, updateProject, videoPath } from './igProjectStore'
 import { buildProfileContext, runWithFallback } from './igContext'
-import type { IgAnalyzeRequest, IgPost, IgProfileAnalysis, IgProgressEvent } from '../../shared/types'
+import type { IgAnalyzeRequest, IgPost, IgProfileAnalysis, IgProgressEvent, TranscriptionEngine } from '../../shared/types'
 
 export interface IgTranscribeCallbacks {
   onLog?: (line: ConsoleLogLine) => void
@@ -24,7 +23,8 @@ const isVideo = (post: IgPost): boolean => post.type === 'reel' || post.type ===
 export async function transcribePosts(
   projectId: string,
   postIds: string[] | undefined,
-  callbacks: IgTranscribeCallbacks = {}
+  callbacks: IgTranscribeCallbacks = {},
+  engine: TranscriptionEngine = 'auto'
 ): Promise<{ transcribed: number; failed: number }> {
   const initial = loadProject(projectId)
   const targets = initial.posts.filter(
@@ -44,7 +44,6 @@ export async function transcribePosts(
 
       const report = (step: string, status: IgProgressEvent['status'], detail?: string) =>
         callbacks.onProgress?.({ postId: post.id, step, status, detail })
-      const mp3 = audioPath(project, post)
 
       try {
         if (!post.videoUrl) throw new Error('Sem link do vídeo — use "Atualizar perfil" para buscar de novo.')
@@ -54,11 +53,18 @@ export async function transcribePosts(
         report('Baixando vídeo', 'completed')
 
         report('Transcrevendo o áudio', 'running')
-        await toTranscriptionAudio(file, mp3, (line) => callbacks.onLog?.({ level: 'progress', text: line }))
-        const result = await transcribeAudioFile(mp3)
-        if (!result) throw new Error('Verifique as API keys do Groq/OpenAI em Settings.')
+        const result = await transcribeVideo(file, {
+          engine,
+          workDir: project.folderPath,
+          onLog: (text) => callbacks.onLog?.({ level: 'progress', text })
+        })
 
-        updatePost(projectId, post.id, { transcript: result.text.trim(), transcriptError: undefined })
+        updatePost(projectId, post.id, {
+          transcript: result.text,
+          transcriptError: undefined,
+          transcriptEngine: result.engine,
+          transcriptSeconds: result.seconds
+        })
         report('Transcrevendo o áudio', 'completed')
         transcribed++
       } catch (error) {
@@ -66,8 +72,6 @@ export async function transcribePosts(
         updatePost(projectId, post.id, { transcriptError: message })
         report('Transcrição', 'failed', message)
         failed++
-      } finally {
-        fs.rmSync(mp3, { force: true })
       }
     }
   } finally {

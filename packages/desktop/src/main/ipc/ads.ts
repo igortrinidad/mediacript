@@ -20,7 +20,8 @@ import type {
   AdProjectDetail,
   AdProjectSummary,
   AdSearchRequest,
-  SavedAd
+  SavedAd,
+  TranscriptionEngine
 } from '../../shared/types'
 
 export function registerAdsIpc(): void {
@@ -63,10 +64,10 @@ export function registerAdsIpc(): void {
       onProgress: (progress) => {
         window?.webContents.send('ads:progress', { projectId, adId, ...progress })
       }
-    })
+    }, request.transcriptionEngine)
   })
 
-  ipcMain.handle('ads:transcribe', async (event, projectId: string, adId: string): Promise<SavedAd> => {
+  ipcMain.handle('ads:transcribe', async (event, projectId: string, adId: string, engine?: TranscriptionEngine): Promise<SavedAd> => {
     const window = BrowserWindow.fromWebContents(event.sender)
 
     return transcribeAd(projectId, adId, {
@@ -76,7 +77,7 @@ export function registerAdsIpc(): void {
       onProgress: (progress) => {
         window?.webContents.send('ads:progress', { projectId, adId, ...progress })
       }
-    })
+    }, engine)
   })
 
   ipcMain.handle('ads:chat:send', (_event, request: AdChatRequest): Promise<AdChatMessage[]> => sendAdChatMessage(request))

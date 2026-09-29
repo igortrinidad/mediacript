@@ -54,7 +54,7 @@ export function registerInstagramIpc(): void {
       onProgress: (progress) => {
         window?.webContents.send('instagram:progress', { projectId, ...progress })
       }
-    })
+    }, request.engine)
   })
 
   ipcMain.handle('instagram:analyze', (_event, request: IgAnalyzeRequest): Promise<IgProfileAnalysis> => analyzeProfile(request))

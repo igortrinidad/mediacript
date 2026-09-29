@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { modelOptionLabel } from '../../shared/modelLabel'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import type { IgPost, IgProjectDetail } from '@shared/types'
+import type { IgPost, IgProjectDetail, TranscriptionEngine } from '@shared/types'
 import { useSettings } from '../../composables/useSettings'
 import { useClipboard } from '../../composables/useClipboard'
 import { renderMarkdown } from '../../shared/markdown'
 import IgChatPanel from './IgChatPanel.vue'
 import IgPostCard from './IgPostCard.vue'
+import TranscriptionEngineSelect from '../../shared/components/TranscriptionEngineSelect.vue'
 import { formatAllPosts } from './postDetails'
 
 const props = defineProps<{
@@ -27,6 +28,7 @@ const modelChoice = ref('')
 /** postId → latest progress step, for posts being transcribed right now */
 const progress = reactive<Record<string, string>>({})
 const transcribing = ref(false)
+const transcriptionEngine = ref<TranscriptionEngine>('auto')
 const analyzing = ref(false)
 const refreshing = ref(false)
 const notice = ref('')
@@ -77,7 +79,7 @@ async function transcribe(postIds?: string[]): Promise<void> {
   for (const id of postIds ?? pendingVideos.value.map((post) => post.id)) progress[id] = 'Na fila…'
 
   try {
-    const result = await window.api.instagram.transcribe({ projectId: props.projectId, postIds })
+    const result = await window.api.instagram.transcribe({ projectId: props.projectId, postIds, engine: transcriptionEngine.value })
     if (result.failed) {
       notice.value = `${result.transcribed} transcrito(s), ${result.failed} com falha. Links expirados? Use “Atualizar perfil” e tente de novo.`
     }
@@ -187,6 +189,7 @@ function compact(value?: number): string {
 
     <div v-show="tab === 'posts'" class="posts">
       <div v-if="project?.posts.length" class="posts-bar">
+        <TranscriptionEngineSelect v-model="transcriptionEngine" />
         <span class="hint">{{ project.transcribedCount }} de {{ project.posts.filter(isVideo).length }} vídeo(s) transcrito(s)</span>
         <button class="btn small" type="button" @click="copy('all-posts', formatAllPosts(project.posts, project.profile))">
           {{ copiedKey === 'all-posts' ? 'Copiado!' : '📋 Copiar todos os posts' }}

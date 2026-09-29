@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, type DeepReadonly } from 'vue'
-import type { IgPost, IgProfile } from '@shared/types'
+import type { IgPost, IgProfile, TranscriptionEngineUsed } from '@shared/types'
 import { useClipboard } from '../../composables/useClipboard'
 import { formatPostDetails } from './postDetails'
 
@@ -25,6 +25,13 @@ const TYPE_LABELS: Record<IgPost['type'], string> = {
 }
 
 const { copiedKey, copy } = useClipboard()
+
+const ENGINE_LABELS: Record<TranscriptionEngineUsed, string> = {
+  groq: 'Groq Whisper (direto)',
+  openai: 'OpenAI (direto)',
+  gemini: 'Gemini (vídeo direto)',
+  local: 'Local (ffmpeg + Whisper)'
+}
 const captionExpanded = ref(false)
 
 const isVideo = computed(() => props.post.type === 'reel' || props.post.type === 'video')
@@ -80,6 +87,9 @@ function openPost(): void {
 
       <details v-if="post.transcript" class="transcript">
         <summary>Transcrição da fala</summary>
+        <p v-if="post.transcriptEngine" class="engine">
+          {{ ENGINE_LABELS[post.transcriptEngine] }}{{ post.transcriptSeconds !== undefined ? ` · ${post.transcriptSeconds}s` : '' }}
+        </p>
         <button class="btn btn-ghost small copy-inline" type="button" @click="copy('transcript', post.transcript)">
           {{ copiedKey === 'transcript' ? 'Copiado!' : 'Copiar transcrição' }}
         </button>
@@ -217,6 +227,12 @@ header {
   margin: 6px 0 0;
   white-space: pre-wrap;
   user-select: text;
+  color: var(--text-muted);
+}
+
+.engine {
+  margin: 4px 0 0;
+  font-size: 10px;
   color: var(--text-muted);
 }
 

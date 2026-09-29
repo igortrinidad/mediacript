@@ -627,6 +627,9 @@ export interface SavedAd extends AdItem {
   analysis?: AdAnalysis
   analysisModel?: string
   analysisEngine?: AdAnalysisEngine
+  /** Which engine produced `transcript`, and how long it took — lets the engines be compared. */
+  transcriptEngine?: TranscriptionEngineUsed
+  transcriptSeconds?: number
   analyzedAt?: string
   error?: string
   /** `mediacript-media:` URL of the thumbnail downloaded at save time (remote URLs expire) */
@@ -653,6 +656,7 @@ export interface AdAnalyzeRequest {
   projectId: string
   adId: string
   engine: AdAnalysisEngine
+  transcriptionEngine?: TranscriptionEngine
   /** Gemini model for the `gemini` engine, or for reading text off image ads with `jev`. */
   model: string
 }
@@ -729,6 +733,8 @@ export interface IgPost {
   /** Speech transcript for videos/reels */
   transcript?: string
   transcriptError?: string
+  transcriptEngine?: TranscriptionEngineUsed
+  transcriptSeconds?: number
 }
 
 /** Model-written read of the whole profile, produced from the profile card + its posts. */
@@ -775,6 +781,7 @@ export interface IgTranscribeRequest {
   projectId: string
   /** Post ids to transcribe; empty/absent = every video/reel not yet transcribed. */
   postIds?: string[]
+  engine?: TranscriptionEngine
 }
 
 export interface IgProgressEvent {
@@ -797,3 +804,9 @@ export interface IgChatRequest {
   provider: AIProviderName
   model: string
 }
+
+// --- Video transcription engines ----------------------------------------------
+
+/** Concrete engines; `auto` (below) picks one. `local` is ffmpeg → mp3 → Whisper; the rest send the mp4 straight to the provider. */
+export type TranscriptionEngineUsed = 'groq' | 'openai' | 'gemini' | 'local'
+export type TranscriptionEngine = 'auto' | TranscriptionEngineUsed

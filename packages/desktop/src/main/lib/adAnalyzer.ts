@@ -1,11 +1,18 @@
 import fs from 'fs'
 import path from 'path'
-import { getStoredConfig, transcribeAudioFile } from 'mediacript'
+import { getStoredConfig } from 'mediacript'
 import { captureConsole, type ConsoleLogLine } from './consoleCapture'
-import { toTranscriptionAudio } from './meetingAudio'
 import { assetPath, downloadAsset, loadProject, updateAd } from './adProjectStore'
+import { transcribeVideo } from './videoTranscriber'
 import { JEV_DEFAULT_MODEL, JEV_MAX_STATE_CHARS, askJev, expectChoice, expectNoul, expectScore, type JevQuestion } from './jevClient'
-import type { AdAnalysis, AdAnalysisEngine, AdProgressEvent, SavedAd } from '../../shared/types'
+import type {
+  AdAnalysis,
+  AdAnalysisEngine,
+  AdProgressEvent,
+  SavedAd,
+  TranscriptionEngine,
+  TranscriptionEngineUsed
+} from '../../shared/types'
 
 export interface AdAnalyzerCallbacks {
   onLog?: (line: ConsoleLogLine) => void
@@ -295,24 +302,6 @@ async function callJev(apiKey: string, ad: SavedAd, transcript?: string, imageTe
   }
 }
 
-/** Whisper transcript of a downloaded ad video (audio is extracted to a temp mp3 and removed afterwards). */
-async function transcribeVideoFile(
-  folderPath: string,
-  adId: string,
-  videoPath: string,
-  callbacks: AdAnalyzerCallbacks
-): Promise<string> {
-  const mp3Path = path.join(folderPath, `${adId}_audio.mp3`)
-  try {
-    const mp3 = await toTranscriptionAudio(videoPath, mp3Path, (line) => callbacks.onLog?.({ level: 'progress', text: line }))
-    const result = await transcribeAudioFile(mp3)
-    if (!result) throw new Error('Verifique as API keys do Groq/OpenAI em Settings.')
-    return result.text.trim()
-  } finally {
-    fs.rmSync(mp3Path, { force: true })
-  }
-}
-
 /**
  * Gets just the transcript of a saved ad, without running an analysis: the
  * speech of a video (Whisper) or the on-screen text of an image (Gemini OCR).
@@ -321,7 +310,8 @@ async function transcribeVideoFile(
 export async function transcribeAd(
   projectId: string,
   adId: string,
-  callbacks: AdAnalyzerCallbacks = {}
+  callbacks: AdAnalyzerCallbacks = {},
+  transcriptionEngine: TranscriptionEngine = 'auto'
 ): Promise<SavedAd> {
   const project = loadProject(projectId)
   const ad = project.ads.find((entry) => entry.id === adId)
@@ -343,11 +333,20 @@ export async function transcribeAd(
 
   try {
     let transcript = ''
+    let used: { engine: TranscriptionEngineUsed; seconds: number } | undefined
 
     if (ad.mediaType === 'video' && ad.videoUrl) {
       const videoUrl = ad.videoUrl
       const videoPath = await step('Baixando vídeo', () => downloadAsset(videoUrl, assetPath(project, ad.id, 'video', videoUrl)))
-      transcript = await step('Transcrevendo o áudio', () => transcribeVideoFile(project.folderPath, ad.id, videoPath, callbacks))
+      const result = await step('Transcrevendo o áudio', () =>
+        transcribeVideo(videoPath, {
+          engine: transcriptionEngine,
+          workDir: project.folderPath,
+          onLog: (text) => callbacks.onLog?.({ level: 'progress', text })
+        })
+      )
+      transcript = result.text
+      used = { engine: result.engine, seconds: result.seconds }
     } else if (ad.mediaType === 'image' && (ad.imageUrl ?? ad.thumbnailUrl)) {
       if (!config.geminiApiKey) throw new Error('Configure a API key da Google Gemini em Settings para ler o texto de anúncios em imagem.')
       const imageUrl = (ad.imageUrl ?? ad.thumbnailUrl)!
@@ -357,7 +356,11 @@ export async function transcribeAd(
       throw new Error('Este anúncio não tem vídeo nem imagem para transcrever.')
     }
 
-    const updated = updateAd(projectId, adId, { transcript: transcript || undefined })
+    const updated = updateAd(projectId, adId, {
+      transcript: transcript || undefined,
+      transcriptEngine: used?.engine,
+      transcriptSeconds: used?.seconds
+    })
     return updated.ads.find((entry) => entry.id === adId)!
   } finally {
     stopCapture?.()
@@ -378,7 +381,8 @@ export async function analyzeAd(
   adId: string,
   engine: AdAnalysisEngine,
   model: string,
-  callbacks: AdAnalyzerCallbacks = {}
+  callbacks: AdAnalyzerCallbacks = {},
+  transcriptionEngine: TranscriptionEngine = 'auto'
 ): Promise<SavedAd> {
   const config = getStoredConfig()
   if (engine === 'gemini' && !config.geminiApiKey) {
@@ -408,6 +412,7 @@ export async function analyzeAd(
 
   try {
     let transcript: string | undefined
+    let transcribedWith: { engine: TranscriptionEngineUsed; seconds: number } | undefined
     let imagePath: string | undefined
 
     // Visual reference for the model: the image itself, or the video's preview frame.
@@ -425,7 +430,15 @@ export async function analyzeAd(
       )
 
       try {
-        transcript = await step('Transcrevendo o áudio', () => transcribeVideoFile(project.folderPath, ad.id, videoPath, callbacks))
+        const result = await step('Transcrevendo o áudio', () =>
+          transcribeVideo(videoPath, {
+            engine: transcriptionEngine,
+            workDir: project.folderPath,
+            onLog: (text) => callbacks.onLog?.({ level: 'progress', text })
+          })
+        )
+        transcript = result.text
+        transcribedWith = { engine: result.engine, seconds: result.seconds }
       } catch (error) {
         console.warn(`⚠️ Sem transcrição para este anúncio (${(error as Error).message}). Analisando só com texto e imagem.`)
       }
@@ -468,6 +481,8 @@ export async function analyzeAd(
       analyzedAt: new Date().toISOString(),
       // Videos keep their speech transcript; images get the text read off the creative.
       transcript: transcript || imageText || undefined,
+      transcriptEngine: transcript ? transcribedWith?.engine : undefined,
+      transcriptSeconds: transcript ? transcribedWith?.seconds : undefined,
       error: undefined
     })
     return updated.ads.find((entry) => entry.id === adId)!

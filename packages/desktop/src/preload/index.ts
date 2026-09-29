@@ -50,6 +50,7 @@ import type {
   IgProjectSummary,
   IgTranscribeRequest,
   SavedAd,
+  TranscriptionEngine,
   MeetingAskRequest,
   MeetingAskResult,
   MeetingControlAction,
@@ -226,7 +227,8 @@ const api = {
     removeAd: (projectId: string, adId: string): Promise<AdProjectDetail> =>
       ipcRenderer.invoke('ads:removeAd', projectId, adId),
     analyze: (request: AdAnalyzeRequest): Promise<SavedAd> => ipcRenderer.invoke('ads:analyze', request),
-    transcribe: (projectId: string, adId: string): Promise<SavedAd> => ipcRenderer.invoke('ads:transcribe', projectId, adId),
+    transcribe: (projectId: string, adId: string, engine?: TranscriptionEngine): Promise<SavedAd> =>
+      ipcRenderer.invoke('ads:transcribe', projectId, adId, engine),
     sendChatMessage: (request: AdChatRequest): Promise<AdChatMessage[]> => ipcRenderer.invoke('ads:chat:send', request),
     clearChat: (projectId: string): Promise<void> => ipcRenderer.invoke('ads:chat:clear', projectId),
     onProgress: (callback: (event: AdProgressEvent) => void): (() => void) => {

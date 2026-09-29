@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { modelOptionLabel } from '../../shared/modelLabel'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import type { AdAnalysisEngine, AdHookStyle, AdItem, AdOfferType, AdProjectDetail } from '@shared/types'
+import type { AdAnalysisEngine, AdHookStyle, AdItem, AdOfferType, AdProjectDetail, TranscriptionEngine } from '@shared/types'
 import { useSettings } from '../../composables/useSettings'
 import { toPlain } from '../../shared/toPlain'
 import AdCard from './AdCard.vue'
+import TranscriptionEngineSelect from '../../shared/components/TranscriptionEngineSelect.vue'
 import AdSearchPanel from './AdSearchPanel.vue'
 import AdsChatPanel from './AdsChatPanel.vue'
 import { useClipboard } from '../../composables/useClipboard'
@@ -29,6 +30,7 @@ const savingId = ref<string | null>(null)
 /** Gemini model: the analysis model for the `gemini` engine, and the image-text reader for `jev`. */
 const model = ref('gemini-3.8-flash')
 const engine = ref<AdAnalysisEngine>('jev')
+const transcriptionEngine = ref<TranscriptionEngine>('auto')
 /** adId → latest progress step text, for ads being analyzed right now */
 const progress = reactive<Record<string, string>>({})
 const analyzingAll = ref(false)
@@ -90,7 +92,13 @@ async function analyze(adId: string): Promise<void> {
   error.value = ''
   progress[adId] = 'Iniciando…'
   try {
-    await window.api.ads.analyze({ projectId: props.projectId, adId, engine: engine.value, model: model.value })
+    await window.api.ads.analyze({
+      projectId: props.projectId,
+      adId,
+      engine: engine.value,
+      transcriptionEngine: transcriptionEngine.value,
+      model: model.value
+    })
   } catch (err: any) {
     error.value = err?.message || 'Falha ao analisar o anúncio'
   } finally {
@@ -103,7 +111,7 @@ async function transcribe(adId: string): Promise<void> {
   error.value = ''
   progress[adId] = 'Iniciando…'
   try {
-    await window.api.ads.transcribe(props.projectId, adId)
+    await window.api.ads.transcribe(props.projectId, adId, transcriptionEngine.value)
   } catch (err: any) {
     error.value = err?.message || 'Falha ao transcrever o anúncio'
   } finally {
@@ -221,6 +229,7 @@ function percent(value: number | null): string {
       </section>
 
       <div v-if="project?.ads.length" class="toolbar">
+        <TranscriptionEngineSelect v-model="transcriptionEngine" />
         <label for="engine">Motor</label>
         <select id="engine" v-model="engine">
           <option value="jev">Jev (TypeSafe) — probabilidades e confiança</option>

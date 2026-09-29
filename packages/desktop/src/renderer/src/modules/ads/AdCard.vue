@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, type DeepReadonly } from 'vue'
-import type { AdItem, SavedAd } from '@shared/types'
+import type { AdItem, SavedAd, TranscriptionEngineUsed } from '@shared/types'
 import { useClipboard } from '../../composables/useClipboard'
 import { formatAdDetails } from './adDetails'
 import { AWARENESS_LABELS, HOOK_LABELS, OFFER_LABELS } from './labels'
@@ -24,6 +24,13 @@ const emit = defineEmits<{
 }>()
 
 const { copiedKey, copy } = useClipboard()
+
+const ENGINE_LABELS: Record<TranscriptionEngineUsed, string> = {
+  groq: 'Groq Whisper (direto)',
+  openai: 'OpenAI (direto)',
+  gemini: 'Gemini (vídeo direto)',
+  local: 'Local (ffmpeg + Whisper)'
+}
 
 const saved = computed(() => (props.mode === 'saved' ? (props.ad as DeepReadonly<SavedAd>) : null))
 const thumbnail = computed(() => saved.value?.localThumbnailUrl ?? props.ad.thumbnailUrl)
@@ -87,6 +94,9 @@ function openLibrary(): void {
 
       <details v-if="saved?.transcript" class="transcript" open>
         <summary>{{ ad.mediaType === 'video' ? 'Transcrição do vídeo' : 'Texto extraído da imagem' }}</summary>
+        <p v-if="saved.transcriptEngine" class="engine">
+          {{ ENGINE_LABELS[saved.transcriptEngine] }}{{ saved.transcriptSeconds !== undefined ? ` · ${saved.transcriptSeconds}s` : '' }}
+        </p>
         <button class="btn btn-ghost small copy-inline" type="button" @click="copy('transcript', saved.transcript)">
           {{ copiedKey === 'transcript' ? 'Copiado!' : 'Copiar transcrição' }}
         </button>
