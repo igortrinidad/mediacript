@@ -107,14 +107,14 @@ function buildSystemPrompt(project: PersistedAdProject, adIds?: string[]): strin
     .join('\n')
 }
 
-interface Candidate {
+export interface Candidate {
   provider: AIProviderName
   model: string
   apiKey: string
 }
 
 /** The chosen model first, then the user's configured fallbacks — same policy as the meetings chat. */
-function buildCandidates(primary: { provider: AIProviderName; model: string }): Candidate[] {
+export function buildCandidates(primary: { provider: AIProviderName; model: string }): Candidate[] {
   const config = getStoredConfig()
   const candidates: Candidate[] = []
 

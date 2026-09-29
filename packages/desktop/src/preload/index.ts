@@ -41,6 +41,14 @@ import type {
   AdProjectDetail,
   AdProjectSummary,
   AdSearchRequest,
+  IgAnalyzeRequest,
+  IgChatRequest,
+  IgCreateRequest,
+  IgProfileAnalysis,
+  IgProgressEvent,
+  IgProjectDetail,
+  IgProjectSummary,
+  IgTranscribeRequest,
   SavedAd,
   MeetingAskRequest,
   MeetingAskResult,
@@ -225,6 +233,26 @@ const api = {
       const listener = (_: unknown, line: AdLogLine) => callback(line)
       ipcRenderer.on('ads:log', listener)
       return () => ipcRenderer.removeListener('ads:log', listener)
+    }
+  },
+
+  instagram: {
+    listProjects: (): Promise<IgProjectSummary[]> => ipcRenderer.invoke('instagram:listProjects'),
+    getProject: (projectId: string): Promise<IgProjectDetail> => ipcRenderer.invoke('instagram:getProject', projectId),
+    createProject: (request: IgCreateRequest): Promise<IgProjectDetail> => ipcRenderer.invoke('instagram:createProject', request),
+    refreshProject: (projectId: string, limit: number): Promise<IgProjectDetail> =>
+      ipcRenderer.invoke('instagram:refreshProject', projectId, limit),
+    deleteProject: (projectId: string, removeFiles: boolean): Promise<void> =>
+      ipcRenderer.invoke('instagram:deleteProject', projectId, removeFiles),
+    transcribe: (request: IgTranscribeRequest): Promise<{ transcribed: number; failed: number }> =>
+      ipcRenderer.invoke('instagram:transcribe', request),
+    analyze: (request: IgAnalyzeRequest): Promise<IgProfileAnalysis> => ipcRenderer.invoke('instagram:analyze', request),
+    sendChatMessage: (request: IgChatRequest): Promise<AdChatMessage[]> => ipcRenderer.invoke('instagram:chat:send', request),
+    clearChat: (projectId: string): Promise<void> => ipcRenderer.invoke('instagram:chat:clear', projectId),
+    onProgress: (callback: (event: IgProgressEvent) => void): (() => void) => {
+      const listener = (_: unknown, event: IgProgressEvent) => callback(event)
+      ipcRenderer.on('instagram:progress', listener)
+      return () => ipcRenderer.removeListener('instagram:progress', listener)
     }
   },
 

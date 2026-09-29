@@ -5,6 +5,7 @@ export type ModuleId =
   | 'agents'
   | 'meetings'
   | 'ads'
+  | 'instagram'
   | 'convert'
   | 'compress'
   | 'screencast'
@@ -27,6 +28,7 @@ const ITEMS: { id: ModuleId; label: string; icon: string }[] = [
   { id: 'agents', label: 'Agents', icon: '🤖' },
   { id: 'meetings', label: 'Reuniões', icon: '🎙️' },
   { id: 'ads', label: 'Ads', icon: '🏆' },
+  { id: 'instagram', label: 'Instagram', icon: '📸' },
   { id: 'convert', label: 'Convert', icon: '🔄' },
   { id: 'compress', label: 'Comprimir', icon: '📦' },
   { id: 'screencast', label: 'Screencast', icon: '🎥' },

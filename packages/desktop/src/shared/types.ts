@@ -687,3 +687,113 @@ export interface AdChatRequest {
   /** Ads the model may draw on; empty/absent means every analyzed ad in the project. */
   adIds?: string[]
 }
+
+// --- Instagram profile analyzer ----------------------------------------------
+
+export type IgPostType = 'reel' | 'video' | 'carousel' | 'image'
+
+export interface IgProfile {
+  username: string
+  fullName?: string
+  biography?: string
+  followers?: number
+  following?: number
+  postsCount?: number
+  verified: boolean
+  isBusiness: boolean
+  category?: string
+  externalUrl?: string
+  profilePicUrl?: string
+  /** Local copy of the profile picture (mediacript-media URL) once downloaded */
+  localProfilePicUrl?: string
+  isPrivate: boolean
+}
+
+export interface IgPost {
+  id: string
+  shortCode: string
+  url: string
+  type: IgPostType
+  caption: string
+  hashtags: string[]
+  mentions: string[]
+  likes?: number
+  comments?: number
+  views?: number
+  durationSeconds?: number
+  /** ISO timestamp */
+  postedAt?: string
+  displayUrl?: string
+  localThumbnailUrl?: string
+  videoUrl?: string
+  /** Speech transcript for videos/reels */
+  transcript?: string
+  transcriptError?: string
+}
+
+/** Model-written read of the whole profile, produced from the profile card + its posts. */
+export interface IgProfileAnalysis {
+  /** Markdown report */
+  report: string
+  model: string
+  provider: AIProviderName
+  createdAt: string
+}
+
+export interface IgProjectSummary {
+  id: string
+  username: string
+  name: string
+  fullName?: string
+  followers?: number
+  postsCount: number
+  transcribedCount: number
+  hasAnalysis: boolean
+  localProfilePicUrl?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IgProjectDetail extends IgProjectSummary {
+  description?: string
+  profile: IgProfile
+  posts: IgPost[]
+  analysis?: IgProfileAnalysis
+  chat: AdChatMessage[]
+  folderPath: string
+  /** ISO timestamp of the last scrape */
+  fetchedAt: string
+}
+
+export interface IgCreateRequest {
+  username: string
+  description?: string
+  limit: number
+}
+
+export interface IgTranscribeRequest {
+  projectId: string
+  /** Post ids to transcribe; empty/absent = every video/reel not yet transcribed. */
+  postIds?: string[]
+}
+
+export interface IgProgressEvent {
+  projectId: string
+  postId?: string
+  step: string
+  status: 'running' | 'completed' | 'failed'
+  detail?: string
+}
+
+export interface IgAnalyzeRequest {
+  projectId: string
+  provider: AIProviderName
+  model: string
+}
+
+export interface IgChatRequest {
+  projectId: string
+  message: string
+  provider: AIProviderName
+  model: string
+}

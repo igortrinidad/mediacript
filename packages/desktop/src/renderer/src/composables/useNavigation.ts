@@ -6,6 +6,7 @@ export type ModuleId =
   | 'agents'
   | 'meetings'
   | 'ads'
+  | 'instagram'
   | 'convert'
   | 'compress'
   | 'screencast'

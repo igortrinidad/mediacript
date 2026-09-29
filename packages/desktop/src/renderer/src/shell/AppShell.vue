@@ -7,6 +7,7 @@ import ChatFlow from '../modules/chat/ChatFlow.vue'
 import AgentsFlow from '../modules/agents/AgentsFlow.vue'
 import MeetingsFlow from '../modules/meetings/MeetingsFlow.vue'
 import AdsFlow from '../modules/ads/AdsFlow.vue'
+import InstagramFlow from '../modules/instagram/InstagramFlow.vue'
 import ConvertFlow from '../modules/convert/ConvertFlow.vue'
 import CompressFlow from '../modules/compress/CompressFlow.vue'
 import ScreencastFlow from '../modules/screencast/ScreencastFlow.vue'
@@ -55,6 +56,7 @@ watch(
       <AgentsFlow v-if="nav.state.active === 'agents'" />
       <MeetingsFlow v-if="nav.state.active === 'meetings'" />
       <AdsFlow v-if="nav.state.active === 'ads'" />
+      <InstagramFlow v-if="nav.state.active === 'instagram'" />
       <ConvertFlow v-if="nav.state.active === 'convert'" />
       <CompressFlow v-if="nav.state.active === 'compress'" />
       <ScreencastFlow v-if="nav.state.active === 'screencast'" />

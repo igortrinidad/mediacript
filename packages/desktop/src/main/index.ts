@@ -23,6 +23,7 @@ import { registerAgentsIpc } from './ipc/agents'
 import { registerScreencastIpc } from './ipc/screencast'
 import { registerMeetingsIpc } from './ipc/meetings'
 import { registerAdsIpc } from './ipc/ads'
+import { registerInstagramIpc } from './ipc/instagram'
 import { registerUpdatesIpc } from './ipc/updates'
 import { registerMediaProtocol } from './lib/mediaProtocol'
 import { fixShellPath } from './lib/shellPath'
@@ -86,6 +87,7 @@ app.whenReady().then(() => {
   registerScreencastIpc()
   registerMeetingsIpc()
   registerAdsIpc()
+  registerInstagramIpc()
   registerUpdatesIpc()
 
   createWindow()
