@@ -1,6 +1,12 @@
 import { ipcMain, desktopCapturer, BrowserWindow, type IpcMainInvokeEvent } from 'electron'
 import { join } from 'path'
-import { getScreencastPreferences, saveRawRecording, saveScreencastPreferences } from '../lib/screencastStore'
+import {
+  appendRawRecordingChunk,
+  beginRawRecording,
+  finishRawRecording,
+  getScreencastPreferences,
+  saveScreencastPreferences
+} from '../lib/screencastStore'
 import { processRecording } from '../lib/screencastRunner'
 import type {
   ScreenSource,
@@ -107,9 +113,17 @@ export function registerScreencastIpc(): void {
     }))
   })
 
-  ipcMain.handle('screencast:saveRawRecording', (_event, buffer: ArrayBuffer): string => {
-    return saveRawRecording(Buffer.from(buffer))
+  ipcMain.handle('screencast:beginRawRecording', (): string => beginRawRecording())
+
+  // Fire-and-forget like the meeting chunks; ordering is guaranteed by the
+  // renderer's write queue and by IPC delivering messages in send order.
+  ipcMain.on('screencast:appendChunk', (_event, chunk: ArrayBuffer): void => {
+    appendRawRecordingChunk(Buffer.from(chunk))
   })
+
+  ipcMain.handle('screencast:finishRawRecording', (_event, discard?: boolean): Promise<string | null> =>
+    finishRawRecording(!!discard)
+  )
 
   ipcMain.handle('screencast:getPreferences', (): Partial<ScreencastPreferences> | null => {
     return getScreencastPreferences()

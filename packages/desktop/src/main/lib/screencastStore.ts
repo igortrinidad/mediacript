@@ -42,9 +42,42 @@ export function saveScreencastPreferences(preferences: ScreencastPreferences): v
   }
 }
 
-/** Saves a raw recording buffer to a datetime-named file in the recordings folder and returns its path. */
-export function saveRawRecording(buffer: Buffer): string {
+// --- Incremental recording writer --------------------------------------------
+
+/**
+ * The recording is appended to disk as MediaRecorder produces chunks instead of
+ * being held in the renderer and shipped over IPC in one piece on stop — a long
+ * recording at these bitrates is gigabytes, which blows past what a single IPC
+ * message / Blob can carry. It also means a crash or a failed stop still leaves
+ * the raw .webm in the recordings folder.
+ */
+let activeWriter: { filePath: string; stream: fs.WriteStream } | null = null
+
+/** Opens the raw file for a new recording and returns its path. */
+export function beginRawRecording(): string {
+  if (activeWriter) {
+    activeWriter.stream.end()
+    activeWriter = null
+  }
   const filePath = path.join(getRecordingsDir(), `${createRunStamp()}_screencast.webm`)
-  fs.writeFileSync(filePath, buffer)
+  activeWriter = { filePath, stream: fs.createWriteStream(filePath) }
   return filePath
+}
+
+export function appendRawRecordingChunk(chunk: Buffer): void {
+  activeWriter?.stream.write(chunk)
+}
+
+/** Flushes and closes the raw file. Pass `discard` to delete it (cancelled recordings). */
+export async function finishRawRecording(discard = false): Promise<string | null> {
+  const writer = activeWriter
+  if (!writer) return null
+  activeWriter = null
+
+  await new Promise<void>((resolve) => writer.stream.end(() => resolve()))
+  if (discard) {
+    fs.rmSync(writer.filePath, { force: true })
+    return null
+  }
+  return writer.filePath
 }

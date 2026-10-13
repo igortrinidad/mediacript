@@ -176,7 +176,12 @@ const api = {
 
   screencast: {
     listSources: (): Promise<ScreenSource[]> => ipcRenderer.invoke('screencast:listSources'),
-    saveRawRecording: (buffer: ArrayBuffer): Promise<string> => ipcRenderer.invoke('screencast:saveRawRecording', buffer),
+    beginRawRecording: (): Promise<string> => ipcRenderer.invoke('screencast:beginRawRecording'),
+    appendChunk: (chunk: ArrayBuffer): void => {
+      ipcRenderer.send('screencast:appendChunk', chunk)
+    },
+    finishRawRecording: (discard = false): Promise<string | null> =>
+      ipcRenderer.invoke('screencast:finishRawRecording', discard),
     getPreferences: (): Promise<Partial<ScreencastPreferences> | null> =>
       ipcRenderer.invoke('screencast:getPreferences'),
     savePreferences: (preferences: ScreencastPreferences): Promise<void> =>

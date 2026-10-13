@@ -51,6 +51,9 @@ const PREVIEW_FPS = 5
 const PREVIEW_WIDTH = 320
 const PREVIEW_JPEG_QUALITY = 0.5
 
+/** How often MediaRecorder hands over data — also the most a crash can cost. */
+const CHUNK_MS = 2000
+
 /** Ordered by preference — the first one this Chromium build can encode wins. */
 const RECORDER_MIME_TYPES = [
   'video/webm;codecs=vp9,opus',
@@ -106,7 +109,7 @@ let cameraStream: MediaStream | null = null
 let micStream: MediaStream | null = null
 let canvasStream: MediaStream | null = null
 let mediaRecorder: MediaRecorder | null = null
-let chunks: Blob[] = []
+let writeQueue: Promise<void> = Promise.resolve()
 let rafHandle: number | null = null
 let timerHandle: ReturnType<typeof setInterval> | null = null
 let unsubscribeControlAction: (() => void) | null = null
@@ -270,15 +273,20 @@ async function startRecording(options: StartRecordingOptions): Promise<void> {
     videoBitsPerSecond: intermediateVideoBitrate(canvas.width, canvas.height),
     audioBitsPerSecond: 128_000
   })
-  chunks = []
+  await window.api.screencast.beginRawRecording()
+  writeQueue = Promise.resolve()
+  // Every chunk goes straight to the file on disk, so nothing accumulates in
+  // the renderer and a crash still leaves a recoverable .webm. `arrayBuffer()`
+  // is async, hence the queue: chunks must reach the main process in order.
   mediaRecorder.ondataavailable = (event) => {
-    if (event.data.size > 0) chunks.push(event.data)
+    if (!event.data.size) return
+    writeQueue = writeQueue.then(async () => {
+      const buffer = await event.data.arrayBuffer()
+      window.api.screencast.appendChunk(buffer)
+    })
   }
 
-  // A timeslice flushes chunks as the recording runs instead of holding one
-  // growing buffer — at these bitrates a long recording would otherwise pin
-  // hundreds of MB in the renderer's heap.
-  mediaRecorder.start(2000)
+  mediaRecorder.start(CHUNK_MS)
   state.phase = 'recording'
   state.elapsedSeconds = 0
   timerHandle = setInterval(() => {
@@ -324,10 +332,11 @@ async function stop(): Promise<string> {
     mediaRecorder!.onstop = async () => {
       cleanupStreams()
 
-      const blob = new Blob(chunks, { type: 'video/webm' })
-      const arrayBuffer = await blob.arrayBuffer()
-      const filePath = await window.api.screencast.saveRawRecording(arrayBuffer)
-      resolveStop?.(filePath)
+      // The final `ondataavailable` fires just before `onstop`; wait for its
+      // queued write before the main process closes the file.
+      await writeQueue
+      const filePath = await window.api.screencast.finishRawRecording()
+      resolveStop?.(filePath ?? '')
       resolveStop = null
     }
     mediaRecorder!.stop()
@@ -347,7 +356,8 @@ async function cancel(): Promise<void> {
       mediaRecorder!.stop()
     })
   }
-  chunks = []
+  await writeQueue
+  await window.api.screencast.finishRawRecording(true)
   cleanupStreams()
   reset()
   await window.api.screencast.closeControlWindow()
