@@ -6,7 +6,9 @@ import type {
   CameraBubbleShape,
   ScreenSource,
   ScreencastPreferences,
-  ScreencastQualityPreset
+  ScreencastQualityPreset,
+  MeetingPlatformSupport,
+  SystemAudioMode
 } from '@shared/types'
 import { BORDER_COLOR_PRESETS, DEFAULT_CAMERA_BUBBLE } from '../composables/cameraBubble'
 import {
@@ -21,6 +23,7 @@ import {
   type StartRecordingOptions
 } from '../composables/useScreenRecorder'
 import CameraBubblePreview from '../components/CameraBubblePreview.vue'
+import { isMonitorDevice } from '../../../shared/systemAudio'
 
 const emit = defineEmits<{
   continue: [options: StartRecordingOptions]
@@ -36,6 +39,9 @@ const cameraEnabled = ref(false)
 const micEnabled = ref(false)
 const selectedCameraId = ref('')
 const selectedMicId = ref('')
+const systemAudioMode = ref<SystemAudioMode>('none')
+const selectedSystemDeviceId = ref('')
+const platformSupport = ref<MeetingPlatformSupport | null>(null)
 const loading = ref(true)
 const starting = ref(false)
 const error = ref('')
@@ -81,6 +87,15 @@ const cameraBubble = computed<CameraBubbleOptions>(() => ({
   borderColor: bubbleBorderColor.value
 }))
 
+const monitorMics = computed(() => mics.value.filter((mic) => isMonitorDevice(mic.label)))
+
+const systemAudioEnabled = computed({
+  get: () => systemAudioMode.value !== 'none',
+  set: (enabled: boolean) => {
+    systemAudioMode.value = !enabled ? 'none' : platformSupport.value?.loopbackSupported ? 'loopback' : 'device'
+  }
+})
+
 const selectedSourceThumbnail = computed(
   () => sources.value.find((source) => source.id === selectedSourceId.value)?.thumbnailDataUrl ?? null
 )
@@ -95,6 +110,8 @@ const preferences = computed<ScreencastPreferences>(() => ({
   micEnabled: micEnabled.value,
   camera: toDevicePreference(cameras.value, selectedCameraId.value),
   mic: toDevicePreference(mics.value, selectedMicId.value),
+  systemAudioMode: systemAudioMode.value,
+  systemAudioDevice: toDevicePreference(mics.value, selectedSystemDeviceId.value),
   cameraBubble: cameraBubble.value,
   qualityPreset: qualityPreset.value,
   previewEnabled: previewEnabled.value
@@ -147,9 +164,20 @@ async function loadSources(): Promise<void> {
 onMounted(async () => {
   try {
     await loadSources()
-    const [devices, saved] = await Promise.all([recorder.listMediaDevices(), loadScreencastPreferences()])
+    const [devices, saved, support] = await Promise.all([
+      recorder.listMediaDevices(),
+      loadScreencastPreferences(),
+      window.api.meetings.platformSupport()
+    ])
     cameras.value = devices.cameras
     mics.value = devices.mics
+    platformSupport.value = support
+
+    // A remembered native-loopback choice is meaningless where the OS can't do it.
+    systemAudioMode.value = saved.systemAudioMode === 'loopback' && !support.loopbackSupported ? 'none' : saved.systemAudioMode
+    selectedSystemDeviceId.value = saved.systemAudioDevice
+      ? resolveDeviceId(devices.mics, saved.systemAudioDevice)
+      : (monitorMics.value[0]?.deviceId ?? devices.mics[0]?.deviceId ?? '')
 
     cameraEnabled.value = saved.cameraEnabled
     micEnabled.value = saved.micEnabled
@@ -182,6 +210,8 @@ async function start(): Promise<void> {
       sourceId: selectedSourceId.value,
       cameraDeviceId: cameraEnabled.value ? selectedCameraId.value || undefined : undefined,
       micDeviceId: micEnabled.value ? selectedMicId.value || undefined : undefined,
+      systemAudioMode: systemAudioMode.value,
+      systemAudioDeviceId: systemAudioMode.value === 'device' ? selectedSystemDeviceId.value || undefined : undefined,
       cameraBubble: cameraEnabled.value ? { ...cameraBubble.value } : undefined,
       qualityPreset: qualityPreset.value,
       previewEnabled: previewEnabled.value
@@ -319,6 +349,46 @@ async function start(): Promise<void> {
         <select v-if="micEnabled" v-model="selectedMicId" class="device-select">
           <option v-for="mic in mics" :key="mic.deviceId" :value="mic.deviceId">{{ mic.label }}</option>
         </select>
+      </div>
+
+      <div class="section system-audio-row">
+        <div class="toggle-row">
+          <label class="toggle-label">
+            <input v-model="systemAudioEnabled" type="checkbox" />
+            Gravar som do computador
+          </label>
+          <div v-if="systemAudioEnabled && platformSupport?.loopbackSupported" class="chip-row">
+            <button
+              type="button"
+              class="chip"
+              :class="{ active: systemAudioMode === 'loopback' }"
+              @click="systemAudioMode = 'loopback'"
+            >
+              Captura automática
+            </button>
+            <button
+              type="button"
+              class="chip"
+              :class="{ active: systemAudioMode === 'device' }"
+              @click="systemAudioMode = 'device'"
+            >
+              Dispositivo
+            </button>
+          </div>
+        </div>
+
+        <select v-if="systemAudioMode === 'device'" v-model="selectedSystemDeviceId" class="device-select">
+          <option v-for="mic in mics" :key="mic.deviceId" :value="mic.deviceId">
+            {{ isMonitorDevice(mic.label) ? '★ ' : '' }}{{ mic.label }}
+          </option>
+        </select>
+        <p v-if="systemAudioMode === 'device' && !monitorMics.length" class="preview-hint">
+          Nenhum dispositivo de retorno detectado. Ative o "Mixagem estéreo" (Windows), use um monitor do PulseAudio
+          (Linux) ou instale um driver virtual como o BlackHole (macOS).
+        </p>
+        <p v-if="systemAudioEnabled" class="preview-hint">
+          {{ platformSupport?.note }} Tudo o que tocar no computador entra na gravação, inclusive notificações.
+        </p>
       </div>
 
       <div class="section toggle-row preview-row">

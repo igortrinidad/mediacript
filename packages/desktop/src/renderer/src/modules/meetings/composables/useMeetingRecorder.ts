@@ -1,6 +1,7 @@
 import { reactive, readonly } from 'vue'
-import type { MeetingAudioSetup, MeetingCreateRequest, MeetingTrack } from '@shared/types'
+import type { MeetingCreateRequest, MeetingTrack } from '@shared/types'
 import { toPlain } from '../../../shared/toPlain'
+import { captureSystemAudio, isMonitorDevice } from '../../../shared/systemAudio'
 
 export interface AudioDeviceOption {
   deviceId: string
@@ -34,8 +35,6 @@ const CHUNK_MS = 5000
 /** Speech-only, mono: 32kbps Opus is transparent enough for transcription and keeps a 2h meeting small. */
 const AUDIO_BITS_PER_SECOND = 32000
 
-const MONITOR_DEVICE_PATTERN = /monitor|stereo mix|mixagem est|blackhole|loopback|soundflower|vb-audio|cable output|what u hear/i
-
 let micStream: MediaStream | null = null
 let systemStream: MediaStream | null = null
 let recorders: { track: MeetingTrack; recorder: MediaRecorder }[] = []
@@ -65,7 +64,7 @@ export async function listAudioInputs(): Promise<AudioDeviceOption[]> {
     .map((device) => ({
       deviceId: device.deviceId,
       label: device.label || 'Entrada de áudio',
-      isMonitor: MONITOR_DEVICE_PATTERN.test(device.label)
+      isMonitor: isMonitorDevice(device.label)
     }))
 }
 
@@ -81,41 +80,6 @@ async function captureMic(deviceId?: string): Promise<MediaStream | null> {
       autoGainControl: true
     }
   })
-}
-
-async function captureSystemAudio(setup: MeetingAudioSetup): Promise<MediaStream | null> {
-  if (setup.systemAudioMode === 'none') return null
-
-  if (setup.systemAudioMode === 'device') {
-    if (!setup.systemAudioDeviceId) return null
-    return navigator.mediaDevices.getUserMedia({
-      audio: {
-        deviceId: { exact: setup.systemAudioDeviceId },
-        // This is already a clean digital copy of the output — any "cleanup"
-        // here would only chew holes in it.
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false
-      }
-    })
-  }
-
-  // Loopback: the main process answers this request with the screen plus a
-  // system-audio track. Video is requested only because Chromium won't give up
-  // desktop audio on its own — it's dropped as soon as the stream arrives.
-  const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
-  for (const track of display.getVideoTracks()) {
-    track.stop()
-    display.removeTrack(track)
-  }
-
-  if (!display.getAudioTracks().length) {
-    throw new Error(
-      'O sistema não entregou o áudio da saída. No Windows verifique se há um dispositivo de reprodução ativo; em outros sistemas use a opção de dispositivo (monitor/cabo virtual).'
-    )
-  }
-
-  return display
 }
 
 function startTrackRecorder(meetingId: string, track: MeetingTrack, stream: MediaStream): MediaRecorder {
@@ -140,7 +104,7 @@ export async function startRecording(request: MeetingCreateRequest): Promise<voi
   micStream = await captureMic(request.setup.micDeviceId)
 
   try {
-    systemStream = await captureSystemAudio(request.setup)
+    systemStream = await captureSystemAudio(request.setup.systemAudioMode, request.setup.systemAudioDeviceId)
   } catch (error) {
     micStream?.getTracks().forEach((track) => track.stop())
     micStream = null

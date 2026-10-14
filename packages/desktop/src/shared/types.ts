@@ -195,6 +195,8 @@ export type ScreencastControlAction =
 export interface ScreencastControlWindowOptions {
   micEnabled: boolean
   cameraEnabled: boolean
+  /** Whether the system output (speakers) is being captured too. */
+  systemAudioEnabled: boolean
   /** Whether the floater opens with the live preview pane already showing. */
   previewEnabled: boolean
 }
@@ -240,6 +242,9 @@ export interface ScreencastPreferences {
   micEnabled: boolean
   camera: ScreencastDevicePreference | null
   mic: ScreencastDevicePreference | null
+  systemAudioMode: SystemAudioMode
+  /** Input used when `systemAudioMode` is `device` (monitor/virtual cable). */
+  systemAudioDevice: ScreencastDevicePreference | null
   cameraBubble: CameraBubbleOptions
   qualityPreset: ScreencastQualityPreset
   previewEnabled: boolean

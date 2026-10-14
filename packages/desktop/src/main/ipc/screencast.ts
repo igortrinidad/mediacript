@@ -32,7 +32,7 @@ function windowFromEvent(event: IpcMainInvokeEvent): BrowserWindow {
  * Floater geometry. The preview pane opens above the bar, so the window grows
  * upwards and the bar itself stays put — see `setControlPreview`.
  */
-const CONTROL_WIDTH = 320
+const CONTROL_WIDTH = 350
 const CONTROL_BAR_HEIGHT = 70
 const CONTROL_PREVIEW_HEIGHT = 180
 
@@ -85,6 +85,7 @@ function createControlWindow(options: ScreencastControlWindowOptions): BrowserWi
   const query = [
     `mic=${options.micEnabled ? '1' : '0'}`,
     `cam=${options.cameraEnabled ? '1' : '0'}`,
+    `sys=${options.systemAudioEnabled ? '1' : '0'}`,
     `preview=${options.previewEnabled ? '1' : '0'}`
   ].join('&')
   if (process.env['ELECTRON_RENDERER_URL']) {

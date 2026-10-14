@@ -5,6 +5,7 @@ const hashQuery = window.location.hash.split('?')[1] || ''
 const params = new URLSearchParams(hashQuery)
 const micEnabled = params.get('mic') === '1'
 const cameraEnabled = params.get('cam') === '1'
+const systemAudioEnabled = params.get('sys') === '1'
 
 const paused = ref(false)
 const elapsedSeconds = ref(0)
@@ -93,6 +94,13 @@ function confirmCancel(): void {
         </span>
         <span
           class="device-icon"
+          :class="systemAudioEnabled ? 'device-on' : 'device-off'"
+          :title="systemAudioEnabled ? 'Som do computador ativado' : 'Som do computador desativado'"
+        >
+          🔊
+        </span>
+        <span
+          class="device-icon"
           :class="cameraEnabled ? 'device-on' : 'device-off'"
           :title="cameraEnabled ? 'Câmera ativada' : 'Câmera desativada'"
         >
@@ -174,7 +182,7 @@ function confirmCancel(): void {
   -webkit-app-region: drag;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   width: 100%;
   height: 70px;
   flex-shrink: 0;

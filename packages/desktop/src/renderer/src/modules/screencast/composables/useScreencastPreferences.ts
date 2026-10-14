@@ -4,7 +4,8 @@ import type {
   CameraBubbleShape,
   ScreencastDevicePreference,
   ScreencastPreferences,
-  ScreencastQualityPreset
+  ScreencastQualityPreset,
+  SystemAudioMode
 } from '@shared/types'
 import { toPlain } from '../../../shared/toPlain'
 import { DEFAULT_CAMERA_BUBBLE } from './cameraBubble'
@@ -16,6 +17,8 @@ function defaultPreferences(): ScreencastPreferences {
     micEnabled: false,
     camera: null,
     mic: null,
+    systemAudioMode: 'none',
+    systemAudioDevice: null,
     cameraBubble: { ...DEFAULT_CAMERA_BUBBLE },
     qualityPreset: 'whatsapp',
     previewEnabled: false
@@ -25,6 +28,7 @@ function defaultPreferences(): ScreencastPreferences {
 const CORNERS: CameraBubbleCorner[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
 const SHAPES: CameraBubbleShape[] = ['circle', 'rounded', 'square']
 const QUALITY_PRESETS: ScreencastQualityPreset[] = ['whatsapp', 'balanced', 'high']
+const SYSTEM_AUDIO_MODES: SystemAudioMode[] = ['none', 'loopback', 'device']
 
 function pickFrom<T extends string>(options: T[], value: unknown, fallback: T): T {
   return options.includes(value as T) ? (value as T) : fallback
@@ -68,6 +72,8 @@ export async function loadScreencastPreferences(): Promise<ScreencastPreferences
     micEnabled: stored.micEnabled === true,
     camera: normalizeDevice(stored.camera),
     mic: normalizeDevice(stored.mic),
+    systemAudioMode: pickFrom(SYSTEM_AUDIO_MODES, stored.systemAudioMode, 'none'),
+    systemAudioDevice: normalizeDevice(stored.systemAudioDevice),
     cameraBubble: normalizeBubble(stored.cameraBubble),
     qualityPreset: pickFrom(QUALITY_PRESETS, stored.qualityPreset, 'whatsapp'),
     previewEnabled: stored.previewEnabled === true

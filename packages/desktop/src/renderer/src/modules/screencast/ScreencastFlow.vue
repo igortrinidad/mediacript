@@ -23,7 +23,7 @@ const hasAudio = ref(false)
 
 async function onStart(options: StartRecordingOptions): Promise<void> {
   qualityPreset.value = options.qualityPreset ?? 'whatsapp'
-  hasAudio.value = !!options.micDeviceId
+  hasAudio.value = !!options.micDeviceId || (options.systemAudioMode ?? 'none') !== 'none'
   await recorder.startRecording(options)
   flow.goTo('recording')
 }

@@ -1,6 +1,7 @@
 import { reactive, readonly } from 'vue'
-import type { CameraBubbleOptions, ScreenSource, ScreencastQualityPreset } from '@shared/types'
+import type { CameraBubbleOptions, ScreenSource, ScreencastQualityPreset, SystemAudioMode } from '@shared/types'
 import { DEFAULT_CAMERA_BUBBLE, drawCameraBubble } from './cameraBubble'
+import { captureSystemAudio } from '../../../shared/systemAudio'
 
 export interface RecordingDeviceOption {
   deviceId: string
@@ -11,6 +12,9 @@ export interface StartRecordingOptions {
   sourceId: string
   cameraDeviceId?: string
   micDeviceId?: string
+  /** What comes out of the speakers: native loopback (Windows) or a monitor/virtual-cable input. */
+  systemAudioMode?: SystemAudioMode
+  systemAudioDeviceId?: string
   cameraBubble?: CameraBubbleOptions
   qualityPreset?: ScreencastQualityPreset
   /** Opens the floating control window with its live preview pane already on. */
@@ -107,6 +111,9 @@ let previewHandle: ReturnType<typeof setInterval> | null = null
 let screenStream: MediaStream | null = null
 let cameraStream: MediaStream | null = null
 let micStream: MediaStream | null = null
+let systemStream: MediaStream | null = null
+let audioContext: AudioContext | null = null
+let mixedAudioStream: MediaStream | null = null
 let canvasStream: MediaStream | null = null
 let mediaRecorder: MediaRecorder | null = null
 let writeQueue: Promise<void> = Promise.resolve()
@@ -193,6 +200,26 @@ function drawFrame(
   }
 }
 
+/**
+ * MediaRecorder encodes a single audio track, so with both the microphone and
+ * the system output on they are summed in an AudioContext first. A lone source
+ * skips the graph and goes in untouched.
+ */
+function buildAudioTracks(): MediaStreamTrack[] {
+  const sources = [micStream, systemStream].filter(
+    (stream): stream is MediaStream => !!stream && stream.getAudioTracks().length > 0
+  )
+  if (sources.length < 2) return sources.flatMap((stream) => stream.getAudioTracks())
+
+  audioContext = new AudioContext({ sampleRate: 48000 })
+  const destination = audioContext.createMediaStreamDestination()
+  for (const stream of sources) {
+    audioContext.createMediaStreamSource(stream).connect(destination)
+  }
+  mixedAudioStream = destination.stream
+  return mixedAudioStream.getAudioTracks()
+}
+
 async function startRecording(options: StartRecordingOptions): Promise<void> {
   screenStream = await navigator.mediaDevices.getUserMedia({
     audio: false,
@@ -234,6 +261,15 @@ async function startRecording(options: StartRecordingOptions): Promise<void> {
       })
     : null
 
+  try {
+    systemStream = await captureSystemAudio(options.systemAudioMode ?? 'none', options.systemAudioDeviceId)
+  } catch (error) {
+    // Screen/camera/mic are already open — don't leave them (and the OS
+    // "recording" indicators) dangling because the speakers couldn't be tapped.
+    cleanupStreams()
+    throw error
+  }
+
   const screenVideo = await playStream(screenStream)
   const cameraVideo = cameraStream ? await playStream(cameraStream) : null
 
@@ -265,7 +301,7 @@ async function startRecording(options: StartRecordingOptions): Promise<void> {
 
   canvasStream = canvas.captureStream(CAPTURE_FPS)
   const tracks: MediaStreamTrack[] = [...canvasStream.getVideoTracks()]
-  if (micStream) tracks.push(...micStream.getAudioTracks())
+  tracks.push(...buildAudioTracks())
 
   const combinedStream = new MediaStream(tracks)
   mediaRecorder = new MediaRecorder(combinedStream, {
@@ -304,6 +340,7 @@ async function startRecording(options: StartRecordingOptions): Promise<void> {
 
   await window.api.screencast.openControlWindow({
     micEnabled: !!micStream,
+    systemAudioEnabled: !!systemStream,
     cameraEnabled: !!cameraStream,
     previewEnabled: !!options.previewEnabled
   })
@@ -377,12 +414,16 @@ function cleanupStreams(): void {
   unsubscribeControlAction?.()
   unsubscribeControlAction = null
 
-  for (const stream of [screenStream, cameraStream, micStream, canvasStream]) {
+  for (const stream of [screenStream, cameraStream, micStream, systemStream, mixedAudioStream, canvasStream]) {
     stream?.getTracks().forEach((track) => track.stop())
   }
   screenStream = null
   cameraStream = null
   micStream = null
+  systemStream = null
+  mixedAudioStream = null
+  void audioContext?.close()
+  audioContext = null
   canvasStream = null
   mediaRecorder = null
 }
