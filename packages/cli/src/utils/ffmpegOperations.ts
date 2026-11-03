@@ -363,6 +363,80 @@ export async function extractAudio(
 }
 
 /**
+ * Bitrate of the speech-only audio produced by `extractTranscriptionAudio`.
+ * 16kHz mono is what Whisper resamples to anyway, so nothing is lost, and at
+ * 32kbps an hour of audio is ~14MB instead of ~85MB at 192kbps.
+ */
+export const TRANSCRIPTION_AUDIO_BITRATE_KBPS = 32
+
+/**
+ * Extracts a speech-optimized audio track (16kHz mono MP3, 32kbps) from any
+ * media file, optionally limited to the `[start, end)` range in seconds.
+ * Re-encodes, so the range is sample-accurate (no keyframe/frame snapping).
+ */
+export async function extractTranscriptionAudio(
+  inputPath: string,
+  outputPath: string,
+  range?: { start: number; end: number }
+): Promise<string> {
+  const args = ['-i', inputPath]
+  if (range) {
+    args.push('-ss', range.start.toFixed(3), '-to', range.end.toFixed(3))
+  }
+  args.push(
+    '-map', '0:a:0',
+    '-vn',
+    '-ac', '1',
+    '-ar', '16000',
+    '-c:a', 'libmp3lame',
+    '-b:a', `${TRANSCRIPTION_AUDIO_BITRATE_KBPS}k`,
+    '-y',
+    outputPath
+  )
+  await runFfmpegCommand(args)
+  return outputPath
+}
+
+/**
+ * Measures the loudness (RMS, in dB) of an audio file in consecutive windows
+ * of `windowSec` seconds. Used to find the quietest moment to split long audio
+ * without cutting a word in half — threshold-free, so it works the same on a
+ * quiet studio take and on a noisy event recording.
+ * @returns One RMS level per window, in order (silent windows are -Infinity)
+ */
+export function measureAudioLevels(inputPath: string, windowSec: number = 0.1): Promise<number[]> {
+  return new Promise((resolve, reject) => {
+    const samplesPerWindow = Math.max(1, Math.round(16000 * windowSec))
+    const ffmpeg = spawn('ffmpeg', [
+      '-v', 'error',
+      '-i', inputPath,
+      '-ac', '1',
+      '-ar', '16000',
+      '-af', `asetnsamples=n=${samplesPerWindow}:p=0,astats=metadata=1:reset=1,ametadata=mode=print:key=lavfi.astats.Overall.RMS_level:file=-`,
+      '-f', 'null', '-'
+    ], { stdio: ['ignore', 'pipe', 'pipe'] })
+
+    const levels: number[] = []
+    let carry = ''
+    ffmpeg.stdout.on('data', (data) => {
+      const lines = (carry + data.toString()).split(/\r?\n/)
+      carry = lines.pop() || ''
+      for (const line of lines) {
+        const match = line.match(/RMS_level=(-?inf|-?[\d.]+)/)
+        if (match) levels.push(match[1].includes('inf') ? -Infinity : parseFloat(match[1]))
+      }
+    })
+    ffmpeg.stderr.on('data', () => {})
+
+    ffmpeg.on('close', (code) => {
+      if (code === 0) resolve(levels)
+      else reject(new Error(`Failed to measure audio levels, code ${code}`))
+    })
+    ffmpeg.on('error', (err) => reject(err))
+  })
+}
+
+/**
  * Converts audio to performant format
  */
 export async function convertAudio(

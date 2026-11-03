@@ -1,19 +1,23 @@
 import path from 'path'
 import fs from 'fs'
-import { Config, TranscriptSegment } from '../types/index.js'
+import { Config, TranscriptSegment, TranscriptWord, TranscriptionRequestOptions } from '../types/index.js'
 import { groqTranscriptAudio } from './groq.js'
 import { openaiTranscriptAudio } from './openai.js'
 import { getFileSize, bytesToMB } from '../utils/fileHelpers.js'
 import { splitAudioIntoChunks, deleteDirectory, getAudioDuration } from '../utils/ffmpegOperations.js'
 
-const MAX_FILE_SIZE_MB = 10
+/** Largest audio file sent to a provider in a single request; bigger files are split into chunks */
+export const MAX_FILE_SIZE_MB = 10
 
 export interface TranscriptionWithSegments {
   text: string
   segments: TranscriptSegment[]
+  /** Only present when word timestamps were requested */
+  words?: TranscriptWord[]
+  language?: string
 }
 
-interface TranscriptionProvider {
+export interface TranscriptionProvider {
   name: string
   transcribe: (audioFilePath: string) => Promise<TranscriptionWithSegments | null>
 }
@@ -23,15 +27,15 @@ interface TranscriptionProvider {
  * faster and cheaper — then OpenAI). Only providers with an API key configured
  * are included.
  */
-function getAvailableProviders(config: Config): TranscriptionProvider[] {
+export function getAvailableProviders(config: Config, options?: TranscriptionRequestOptions): TranscriptionProvider[] {
   const providers: TranscriptionProvider[] = []
 
   if (config.groqApiKey) {
-    providers.push({ name: 'Groq', transcribe: (audioFilePath) => groqTranscriptAudio(audioFilePath, config.groqApiKey!) })
+    providers.push({ name: 'Groq', transcribe: (audioFilePath) => groqTranscriptAudio(audioFilePath, config.groqApiKey!, undefined, options) })
   }
 
   if (config.openaiApiKey) {
-    providers.push({ name: 'OpenAI', transcribe: (audioFilePath) => openaiTranscriptAudio(audioFilePath, config.openaiApiKey!) })
+    providers.push({ name: 'OpenAI', transcribe: (audioFilePath) => openaiTranscriptAudio(audioFilePath, config.openaiApiKey!, options) })
   }
 
   return providers
@@ -42,7 +46,7 @@ function getAvailableProviders(config: Config): TranscriptionProvider[] {
  * once, in order, moving on to the next as soon as one fails — until one
  * succeeds or every option has been exhausted.
  */
-async function transcribeSingleAudio(
+export async function transcribeSingleAudio(
   audioFilePath: string,
   providers: TranscriptionProvider[]
 ): Promise<TranscriptionWithSegments | null> {

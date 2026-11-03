@@ -20,6 +20,13 @@ async function main() {
     return
   }
 
+  if (subcommand === 'transcribe') {
+    const transcribeURL = pathToFileURL(join(__dirname, 'dist', 'esm', 'commands', 'transcribe.js')).href
+    const { runTranscribeCommand } = await import(transcribeURL)
+    await runTranscribeCommand(process.argv.slice(3))
+    return
+  }
+
   // Converte o caminho para URL file:// (necessário no Windows)
   const indexPath = join(__dirname, 'dist', 'esm', 'index.js')
   const indexURL = pathToFileURL(indexPath).href

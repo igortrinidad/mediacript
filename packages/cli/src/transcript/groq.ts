@@ -1,11 +1,15 @@
 import FormData from 'form-data'
 import fs from 'fs'
 import axios from 'axios'
-import type { TranscriptSegment } from '../types/index.js'
+import type { TranscriptSegment, TranscriptWord, TranscriptionRequestOptions } from '../types/index.js'
 
 export interface GroqTranscriptionResult {
   text: string
   segments: TranscriptSegment[]
+  /** Only present when `options.wordTimestamps` was requested */
+  words?: TranscriptWord[]
+  /** Language reported by the provider, if any */
+  language?: string
 }
 
 /**
@@ -22,12 +26,14 @@ const DEFAULT_TIMEOUT_MS = 300000
  * @param audioLocalFilePath - Local audio file path
  * @param apiKey - Groq API Key
  * @param timeoutMs - Request timeout in milliseconds (default: 5 minutes)
+ * @param options - Optional language, prompt and word-timestamp request
  * @returns Transcribed text with segment-level timestamps, or null in case of error
  */
 export const groqTranscriptAudio = async (
   audioLocalFilePath: string,
   apiKey: string,
-  timeoutMs: number = DEFAULT_TIMEOUT_MS
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+  options: TranscriptionRequestOptions = {}
 ): Promise<GroqTranscriptionResult | null> => {
 
   if (!apiKey) {
@@ -43,7 +49,12 @@ export const groqTranscriptAudio = async (
     formData.append('model', 'whisper-large-v3')
     formData.append('response_format', 'verbose_json')
     formData.append('temperature', '0')
-    // formData.append('language', 'pt')
+    if (options.language) formData.append('language', options.language)
+    if (options.prompt) formData.append('prompt', options.prompt)
+    if (options.wordTimestamps) {
+      formData.append('timestamp_granularities[]', 'word')
+      formData.append('timestamp_granularities[]', 'segment')
+    }
 
     const { data } = await axios.post(
       'https://api.groq.com/openai/v1/audio/transcriptions',
@@ -57,16 +68,23 @@ export const groqTranscriptAudio = async (
       }
     )
 
-    const text = data?.text?.trim()
-    if (!text) return null
+    const text = (data?.text || '').trim()
+    // A chunk without speech is a valid result when word timings are wanted (the
+    // timeline stays intact); otherwise keep the original "empty = failure" behavior.
+    if (!text && !options.wordTimestamps) return null
 
     const segments: TranscriptSegment[] = (data?.segments || []).map((segment: any) => ({
       start: segment.start,
       end: segment.end,
-      text: (segment.text || '').trim()
+      text: (segment.text || '').trim(),
+      ...(options.wordTimestamps ? { noSpeechProb: segment.no_speech_prob, avgLogprob: segment.avg_logprob } : {})
     }))
 
-    return { text, segments }
+    const result: GroqTranscriptionResult = { text, segments, language: data?.language }
+    if (options.wordTimestamps) {
+      result.words = (data?.words || []).map((w: any) => ({ word: String(w.word ?? ''), start: w.start, end: w.end }))
+    }
+    return result
 
   } catch (error: any) {
     console.error('Error transcribing audio with Groq:', error.response?.data || error.message)

@@ -39,6 +39,30 @@ export interface TranscriptSegment {
   start: number
   end: number
   text: string
+  /** Whisper's probability that the segment holds no speech (only filled when word timestamps are requested) */
+  noSpeechProb?: number
+  /** Whisper's average token log-probability for the segment (only filled when word timestamps are requested) */
+  avgLogprob?: number
+}
+
+/** A single recognized word with its own timing, in seconds */
+export interface TranscriptWord {
+  word: string
+  start: number
+  end: number
+}
+
+/** Optional request parameters shared by the Whisper providers */
+export interface TranscriptionRequestOptions {
+  /** ISO-639-1 language code (e.g. 'pt'). Omit to let the provider auto-detect. */
+  language?: string
+  /**
+   * Text that biases the transcription style/vocabulary (Whisper `prompt`).
+   * Useful to keep filler words or domain keywords written verbatim.
+   */
+  prompt?: string
+  /** Also request word-level timestamps (`timestamp_granularities[]=word`) */
+  wordTimestamps?: boolean
 }
 
 export interface HighlightSegment {

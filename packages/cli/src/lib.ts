@@ -40,6 +40,13 @@ import {
   type FramingMode
 } from './utils/exportFormats.js'
 import { transcribeAudio, transcribeAudioWithSegments, saveTranscription } from './transcript/index.js'
+import {
+  transcribeMediaWithWords,
+  type WordTranscriptionOptions,
+  type WordTranscriptionResult,
+  type WordTranscriptionProgress,
+  type TranscriptChunkRange
+} from './transcript/words.js'
 import { saveSrtFile, getSrtOutputPath, loadSrtFile } from './subtitles/srt.js'
 import { extractHighlightsFromTranscript, applyHighlightMargin } from './highlights/index.js'
 import { continueHighlightChat, type HighlightChatMessage, type HighlightChatTurnResult } from './highlights/chat.js'
@@ -54,7 +61,7 @@ import {
   type AIProviderName,
   type ModelPrice
 } from './ai/index.js'
-import type { Config, TranscriptSegment, HighlightSegment, HighlightFallbackModel } from './types/index.js'
+import type { Config, TranscriptSegment, TranscriptWord, HighlightSegment, HighlightFallbackModel } from './types/index.js'
 
 export interface MediaScriptOptions {
 
@@ -140,6 +147,9 @@ export type { ExportFormatId, ExportFormatDefinition, QualityPresetId, QualityPr
 // Re-export AI provider types/constants for convenience
 export { AI_MODELS_BY_PROVIDER, AI_PROVIDER_LABELS, createAIProvider, MODEL_PRICING, MODEL_PRICING_AS_OF, getModelPrice }
 export type { AIProviderName, ModelPrice, TranscriptSegment, HighlightSegment }
+
+// Word-level transcription types (see transcribeWithWords)
+export type { TranscriptWord, WordTranscriptionOptions, WordTranscriptionResult, WordTranscriptionProgress, TranscriptChunkRange }
 
 // Re-export the SRT writer for consumers that orchestrate their own transcribe+save
 // steps (e.g. a GUI wanting fine-grained per-step progress instead of generateSubtitles)
@@ -337,6 +347,26 @@ export async function saveTranscriptionToFile(
   audioFilePath: string
 ): Promise<string> {
   return saveTranscription(audioFilePath, transcriptionText)
+}
+
+/**
+ * Transcribe any audio/video file with word-level timestamps (Groq, then
+ * OpenAI as fallback). Meant for editing pipelines that cut on word
+ * boundaries: extracts a speech-optimized track, splits at quiet points only
+ * when it exceeds the per-request size limit (10MB, same as the other
+ * transcription methods), transcribes chunks in parallel and rebases timings.
+ * Unlike `transcribeAudioFile`, it throws on failure instead of returning null.
+ * @param mediaPath - Path to the audio or video file
+ * @param options - Optional API keys, language, prompt and chunking settings
+ */
+export async function transcribeWithWords(
+  mediaPath: string,
+  options?: WordTranscriptionOptions & Pick<MediaScriptOptions, 'groqApiKey' | 'openaiApiKey'>
+): Promise<WordTranscriptionResult> {
+  const config: Config = options?.groqApiKey || options?.openaiApiKey
+    ? { groqApiKey: options.groqApiKey || '', openaiApiKey: options.openaiApiKey || '' }
+    : loadConfig()
+  return transcribeMediaWithWords(mediaPath, config, options)
 }
 
 /**
