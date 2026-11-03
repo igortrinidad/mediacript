@@ -81,10 +81,34 @@ export function loadConfig(): Config {
   return {}
 }
 
+/** Environment variables that override the saved transcription keys (CI, agents, one-off runs) */
+export const TRANSCRIPTION_KEY_ENV: Record<'groqApiKey' | 'openaiApiKey', string> = {
+  groqApiKey: 'GROQ_API_KEY',
+  openaiApiKey: 'OPENAI_API_KEY'
+}
+
+/**
+ * Saved configuration with `GROQ_API_KEY` / `OPENAI_API_KEY` taking precedence
+ * over the file. Meant for reading only: saving its result would persist the env keys.
+ */
+export function loadConfigWithEnv(env: NodeJS.ProcessEnv = process.env): Config {
+  const config = loadConfig()
+  for (const [configKey, envName] of Object.entries(TRANSCRIPTION_KEY_ENV) as [keyof typeof TRANSCRIPTION_KEY_ENV, string][]) {
+    const value = env[envName]?.trim()
+    if (value) config[configKey] = value
+  }
+  return config
+}
+
+/** Path of the config file, for messages that tell the user where keys live */
+export function getConfigFile(): string {
+  return getConfigFilePath()
+}
+
 /**
  * Saves configuration
  */
-export function saveConfig(config: Config): void {
+export function saveConfig(config: Config, quiet = false): void {
   try {
     const configDir = getConfigDir()
     const configPath = getConfigFilePath()
@@ -95,7 +119,7 @@ export function saveConfig(config: Config): void {
     }
     
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
-    console.log(`✓ Configuration saved in: ${configPath}`)
+    if (!quiet) console.log(`✓ Configuration saved in: ${configPath}`)
   } catch (error) {
     console.error('Error saving configuration:', error)
   }

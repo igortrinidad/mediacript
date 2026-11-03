@@ -5,15 +5,21 @@
  *     [--output out.json] [--concurrency 4] [--max-chunk-mb 10]
  *
  * Writes JSON to --output (or stdout). All progress/log output goes to
- * stderr so stdout stays parseable. Exit code is non-zero on failure.
+ * stderr so stdout stays parseable.
+ *
+ * Exit codes: 0 ok, 1 transcription failed, 2 bad arguments, 3 no API key configured.
+ * Keys come from GROQ_API_KEY / OPENAI_API_KEY or the saved config (`mediacript config set`).
  */
 
 import fs from 'fs'
 import path from 'path'
-import { loadConfig } from '../config/index.js'
+import { loadConfigWithEnv } from '../config/index.js'
 import { transcribeMediaWithWords } from '../transcript/words.js'
 import { transcribeAudioWithSegments } from '../transcript/index.js'
 import { extractTranscriptionAudio } from '../utils/ffmpegOperations.js'
+
+/** Distinct so callers can ask the user for a key instead of treating it as a transient failure */
+export const EXIT_NO_KEY = 3
 
 interface TranscribeArgs {
   file: string
@@ -34,6 +40,9 @@ Options:
   --output, -o <path>   Write JSON here instead of stdout
   --concurrency <n>     Chunks transcribed in parallel (default: 4, --words only)
   --max-chunk-mb <n>    Max audio size per request (default: 10, --words only)
+
+API keys: GROQ_API_KEY / OPENAI_API_KEY, or saved with \`mediacript config set groq <key>\`.
+Exit codes: 0 ok, 1 transcription failed, 2 bad arguments, 3 no API key configured.
 `
 
 function parseArgs(argv: string[]): TranscribeArgs {
@@ -85,10 +94,14 @@ export async function runTranscribeCommand(argv: string[]): Promise<void> {
     process.exit(2)
   }
 
-  const config = loadConfig()
+  const config = loadConfigWithEnv()
   if (!config.groqApiKey && !config.openaiApiKey) {
-    process.stderr.write('No Groq/OpenAI API key configured. Run `mediacript` once to set it up.\n')
-    process.exit(2)
+    process.stderr.write(
+      'No Groq/OpenAI API key configured.\n' +
+      'Save one with `mediacript config set groq <key>` (get it at https://console.groq.com/keys),\n' +
+      'set GROQ_API_KEY, or run `mediacript` for the interactive setup.\n'
+    )
+    process.exit(EXIT_NO_KEY)
   }
 
   const startedAt = Date.now()
