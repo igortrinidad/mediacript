@@ -150,7 +150,24 @@ With `--words`:
 - Output: `{ file, engine, elapsedSec, text, language, duration, words: [{ word, start, end }], segments,
   chunks, recoveredGaps }`, all times in seconds.
 
-Exit codes: `0` success, `1` transcription failed, `2` bad arguments or no API key configured.
+Exit codes: `0` success, `1` transcription failed, `2` bad arguments, `3` no API key configured.
+
+### Non-interactive API key setup
+
+`transcribe` never prompts. Keys come from the `GROQ_API_KEY` / `OPENAI_API_KEY` environment variables
+(which take precedence) or from the saved config, which can be managed without prompts:
+
+```bash
+mediacript config status              # JSON: which keys are configured and where from (keys never printed)
+mediacript config set groq <key>      # validates the key with the provider, then saves it
+mediacript config set openai <key> --no-verify
+mediacript config unset groq
+mediacript config path                # location of config.json
+```
+
+`config set` exits `1` without saving when the provider rejects the key (or can't be reached; pass
+`--no-verify` to skip the check). Get keys at [console.groq.com/keys](https://console.groq.com/keys) and
+[platform.openai.com/api-keys](https://platform.openai.com/api-keys).
 
 ### Available Workflows
 
