@@ -152,6 +152,29 @@ if (result) {
 const result2 = await transcribeAudioFile('./audio.mp3')
 ```
 
+### 5.1. Transcrever com Timestamps por Palavra
+
+Aceita vídeo ou áudio de qualquer duração. Extrai uma faixa leve (16 kHz mono), divide em pedaços de no
+máximo 10 MB cortados nos pontos mais silenciosos, transcreve em paralelo (Groq, com OpenAI de reserva) e
+reenvia trechos que voltaram sem palavras apesar de terem som.
+
+```javascript
+import { transcribeWithWords } from 'mediacript'
+
+const result = await transcribeWithWords('palestra.mp4', {
+  language: 'pt',
+  prompt: 'Hum, é, tipo, né, então...', // mantém muletas escritas literalmente
+  concurrency: 4,                         // pedaços ao mesmo tempo (padrão 4)
+  onProgress: (e) => console.error(e.type)
+})
+
+console.log(result.words)         // [{ word, start, end }, ...] na linha do tempo do arquivo inteiro
+console.log(result.chunks)        // onde o áudio foi dividido
+console.log(result.recoveredGaps) // trechos que foram retranscritos
+```
+
+Também disponível na CLI, sem interação: `mediacript transcribe arquivo.mp4 --words --language pt -o saida.json`.
+
 ### 6. Salvar Transcrição em Arquivo
 
 ```javascript
@@ -476,6 +499,7 @@ Veja o arquivo `src/lib.ts` para a definição completa de tipos e funções dis
 - `extractAudioFromVideo(path, outputDir?)` - Extrai áudio de vídeo
 - `convertAudioFile(path, outputDir?)` - Converte áudio para MP3
 - `transcribeAudioFile(path, options?)` - Transcreve áudio (já inclui `segments` com timeline)
+- `transcribeWithWords(path, options?)` - Transcreve vídeo/áudio de qualquer duração com timestamps por palavra
 - `saveTranscriptionToFile(text, audioPath)` - Salva transcrição em arquivo
 - `generateSubtitles(path, options?)` - Transcreve e gera um arquivo `.srt` com a timeline
 - `extractVideoHighlights(segments, prompt, aiOptions)` - Pede para uma IA escolher os melhores trechos
@@ -509,6 +533,34 @@ interface TranscriptSegment {
   start: number // segundos
   end: number   // segundos
   text: string
+}
+
+interface TranscriptWord {
+  word: string
+  start: number // segundos
+  end: number   // segundos
+}
+
+interface WordTranscriptionOptions {
+  language?: string             // ex.: 'pt'; omita para detectar
+  prompt?: string               // prompt do Whisper
+  maxChunkSizeMB?: number       // padrão 10
+  splitSearchWindowSec?: number // quanto voltar do limite procurando silêncio (padrão 30)
+  concurrency?: number          // padrão 4
+  maxAttempts?: number          // tentativas por pedaço (padrão 2)
+  recoverSkippedSpeech?: boolean // reenviar trechos com som e sem palavras (padrão true)
+  tempDir?: string
+  onProgress?: (event: WordTranscriptionProgress) => void
+}
+
+interface WordTranscriptionResult {
+  text: string
+  language?: string
+  duration: number
+  words: TranscriptWord[]
+  segments: TranscriptSegment[]
+  chunks: { start: number; end: number }[]
+  recoveredGaps: { start: number; end: number }[]
 }
 
 interface HighlightSegment {

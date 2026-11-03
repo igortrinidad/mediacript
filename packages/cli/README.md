@@ -119,6 +119,39 @@ The CLI will:
 3. 📁 List media files in the current directory
 4. 🎯 Allow you to choose the desired workflow
 
+### Non-interactive transcription (scripts & pipelines)
+
+`transcribe` takes one video or audio file, prints nothing on stdout but the JSON result (progress goes to
+stderr) and never prompts, so it can be called from other tools:
+
+```bash
+mediacript transcribe talk.mp4 --words --language pt -o talk.json
+# from the repository: node cli.mjs transcribe talk.mp4 --words ...
+```
+
+| Option | Description |
+|---|---|
+| `--words` | Word-level timestamps (default: segments only) |
+| `--language <code>` | Language code, e.g. `pt` (default: auto-detect) |
+| `--prompt <text>` | Whisper prompt, e.g. filler words or keywords to keep verbatim |
+| `--output, -o <path>` | Write the JSON here instead of stdout |
+| `--concurrency <n>` | Chunks transcribed in parallel (default: 4, `--words` only) |
+| `--max-chunk-mb <n>` | Max audio size per request (default: 10, `--words` only) |
+
+With `--words`:
+
+- A lean 16 kHz mono track is extracted. If it exceeds the per-request limit, it is split into chunks of at
+  most 90% of the limit, cutting at the quietest point near each boundary so no word is cut in half.
+  Chunks are transcribed in parallel and their timestamps shifted back onto the full timeline.
+- Stretches that come back without words although the audio is clearly not silent (Whisper occasionally
+  skips a whole window) are re-sent in shorter pieces (45 s, then 15 s). The loudness threshold adapts to
+  each file's noise floor and speech level.
+- Groq is used first and OpenAI is the fallback, per chunk.
+- Output: `{ file, engine, elapsedSec, text, language, duration, words: [{ word, start, end }], segments,
+  chunks, recoveredGaps }`, all times in seconds.
+
+Exit codes: `0` success, `1` transcription failed, `2` bad arguments or no API key configured.
+
 ### Available Workflows
 
 #### For Videos 🎬
