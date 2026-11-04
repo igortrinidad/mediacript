@@ -3,7 +3,7 @@ import fs from 'fs'
 import os from 'os'
 import type { Config, TranscriptSegment, TranscriptWord } from '../types/index.js'
 import { getAvailableProviders, transcribeSingleAudio, MAX_FILE_SIZE_MB, type TranscriptionWithSegments } from './index.js'
-import { getFileSize, bytesToMB } from '../utils/fileHelpers.js'
+import { getFileSize, bytesToMB, limitFileNameLength } from '../utils/fileHelpers.js'
 import {
   extractTranscriptionAudio,
   measureAudioLevels,
@@ -314,7 +314,7 @@ export async function transcribeMediaWithWords(
   const maxChunkSizeMB = options.maxChunkSizeMB ?? MAX_FILE_SIZE_MB
   const concurrency = options.concurrency ?? 4
   const maxAttempts = Math.max(1, options.maxAttempts ?? 2)
-  const baseName = path.basename(mediaPath, path.extname(mediaPath)).replace(/[^\w.-]+/g, '_')
+  const baseName = limitFileNameLength(path.basename(mediaPath, path.extname(mediaPath)).replace(/[^\w.-]+/g, '_'), 40)
   const workDir = fs.mkdtempSync(path.join(options.tempDir || os.tmpdir(), `mediacript-words-${baseName}-`))
 
   try {

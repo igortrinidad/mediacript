@@ -2,6 +2,7 @@ import { spawn } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import os from 'os'
+import { getSafeBaseName, limitFileNameLength, MAX_STEM_BYTES } from './fileHelpers.js'
 import type { ExportFormatDefinition, FramingMode, QualityPresetDefinition } from './exportFormats.js'
 
 export type ConversionPreset = 'ultrafast' | 'superfast' | 'veryfast' | 'faster' | 'fast' | 'medium' | 'slow' | 'slower' | 'veryslow'
@@ -63,6 +64,11 @@ export interface ConversionOptions {
  * Generates unique output file path
  */
 export function uniqueOutputPath(dir: string, baseName: string, extWithDot: string): string {
+  // Last-resort guard: whatever the caller composed (input name + suffix, or a
+  // user/AI-provided outputName), the final name must fit the filesystem limit.
+  // Room is left for the `_NNNN` de-duplication suffix and the extension.
+  baseName = limitFileNameLength(baseName, MAX_STEM_BYTES - Buffer.byteLength(extWithDot, 'utf8') - 5)
+
   let candidate = path.join(dir, `${baseName}${extWithDot}`)
   if (!fs.existsSync(candidate)) return candidate
 
@@ -188,7 +194,7 @@ export async function convertVideo(
   options?: ConversionOptions
 ): Promise<string> {
   const dir = options?.outputDir || path.dirname(inputPath)
-  const baseName = options?.outputName || `${path.basename(inputPath, path.extname(inputPath))}_converted`
+  const baseName = options?.outputName || `${getSafeBaseName(inputPath)}_converted`
   const outputPath = uniqueOutputPath(dir, baseName, '.mp4')
 
   // Default options
@@ -331,8 +337,7 @@ async function convertVideoInternal(
  */
 export function getExtractedAudioPath(mediaFilePath: string, outputDir?: string): string {
   const dir = outputDir || path.dirname(mediaFilePath)
-  const baseName = path.basename(mediaFilePath, path.extname(mediaFilePath))
-  return path.join(dir, `${baseName}_audio.mp3`)
+  return path.join(dir, `${getSafeBaseName(mediaFilePath)}_audio.mp3`)
 }
 
 /**
@@ -343,7 +348,7 @@ export async function extractAudio(
   outputDir?: string
 ): Promise<string> {
   const dir = outputDir || path.dirname(inputPath)
-  const baseName = path.basename(inputPath, path.extname(inputPath))
+  const baseName = getSafeBaseName(inputPath)
   const outputPath = uniqueOutputPath(dir, `${baseName}_audio`, '.mp3')
 
   console.log(`\n🎵 Extracting audio from video...`)
@@ -444,7 +449,7 @@ export async function convertAudio(
   outputDir?: string
 ): Promise<string> {
   const dir = outputDir || path.dirname(inputPath)
-  const baseName = path.basename(inputPath, path.extname(inputPath))
+  const baseName = getSafeBaseName(inputPath)
   const outputPath = uniqueOutputPath(dir, `${baseName}_converted`, '.mp3')
 
   console.log(`\n🎵 Converting audio to MP3...`)
@@ -545,7 +550,7 @@ export async function splitAudioIntoChunks(
   maxSizeMB: number = 10
 ): Promise<string[]> {
   const dir = path.dirname(inputPath)
-  const baseName = path.basename(inputPath, path.extname(inputPath))
+  const baseName = getSafeBaseName(inputPath)
   const ext = path.extname(inputPath).toLowerCase()
   
   // Create temp directory for chunks
@@ -611,7 +616,7 @@ export async function cutVideoSegment(
   }
 
   const dir = options?.outputDir || path.dirname(inputPath)
-  const baseName = options?.outputName || `${path.basename(inputPath, path.extname(inputPath))}_cut`
+  const baseName = options?.outputName || `${getSafeBaseName(inputPath)}_cut`
   const outputPath = uniqueOutputPath(dir, baseName, '.mp4')
   const duration = end - start
 
@@ -744,7 +749,7 @@ export async function exportClipToFormat(
   options?: { outputDir?: string; outputName?: string }
 ): Promise<string> {
   const dir = options?.outputDir || path.dirname(inputPath)
-  const baseName = options?.outputName || path.basename(inputPath, path.extname(inputPath))
+  const baseName = options?.outputName || getSafeBaseName(inputPath)
   const outputPath = uniqueOutputPath(dir, `${baseName}_${format.id}`, '.mp4')
 
   const { width: srcWidth, height: srcHeight } = await getVideoDimensions(inputPath)
@@ -839,7 +844,7 @@ export async function compressVideoToTargetSize(
   }
 
   const dir = options?.outputDir || path.dirname(inputPath)
-  const baseName = options?.outputName || `${path.basename(inputPath, path.extname(inputPath))}_compressed`
+  const baseName = options?.outputName || `${getSafeBaseName(inputPath)}_compressed`
   const outputPath = uniqueOutputPath(dir, baseName, '.mp4')
 
   const preset = options?.preset || 'slow'
@@ -953,7 +958,7 @@ export async function applyHardSubtitles(
   options?: { outputDir?: string; outputName?: string }
 ): Promise<string> {
   const dir = options?.outputDir || path.dirname(inputPath)
-  const baseName = options?.outputName || `${path.basename(inputPath, path.extname(inputPath))}_hardsub`
+  const baseName = options?.outputName || `${getSafeBaseName(inputPath)}_hardsub`
   const outputPath = uniqueOutputPath(dir, baseName, '.mp4')
 
   console.log(`\n📝 Gravando legendas no vídeo (hardsub)...`)
@@ -1001,7 +1006,7 @@ export async function applySoftSubtitles(
   options?: { outputDir?: string; outputName?: string }
 ): Promise<string> {
   const dir = options?.outputDir || path.dirname(inputPath)
-  const baseName = options?.outputName || `${path.basename(inputPath, path.extname(inputPath))}_softsub`
+  const baseName = options?.outputName || `${getSafeBaseName(inputPath)}_softsub`
   const outputPath = uniqueOutputPath(dir, baseName, '.mp4')
 
   console.log(`\n📝 Adicionando legenda como faixa separada (softsub)...`)

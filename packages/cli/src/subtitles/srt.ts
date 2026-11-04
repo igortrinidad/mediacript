@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import type { TranscriptSegment } from '../types/index.js'
+import { getSafeBaseName } from '../utils/fileHelpers.js'
 
 /**
  * Formats seconds as an SRT timestamp: HH:MM:SS,mmm
@@ -38,8 +39,7 @@ export function segmentsToSrt(segments: TranscriptSegment[]): string {
  */
 export function getSrtOutputPath(mediaFilePath: string, outputDir?: string): string {
   const dir = outputDir || path.dirname(mediaFilePath)
-  const baseName = path.basename(mediaFilePath, path.extname(mediaFilePath))
-  return path.join(dir, `${baseName}.srt`)
+  return path.join(dir, `${getSafeBaseName(mediaFilePath)}.srt`)
 }
 
 /**

@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import type { TranscriptSegment } from 'mediacript'
+import { getSafeBaseName, type TranscriptSegment } from 'mediacript'
 
 /**
  * Where `saveSubtitleTextFile` writes the plain-text version of a media file's
@@ -9,8 +9,7 @@ import type { TranscriptSegment } from 'mediacript'
  */
 export function getSubtitleTextOutputPath(mediaFilePath: string, outputDir?: string): string {
   const dir = outputDir || path.dirname(mediaFilePath)
-  const baseName = path.basename(mediaFilePath, path.extname(mediaFilePath))
-  return path.join(dir, `${baseName}.legenda.txt`)
+  return path.join(dir, `${getSafeBaseName(mediaFilePath)}.legenda.txt`)
 }
 
 /**

@@ -3,7 +3,7 @@ import fs from 'fs'
 import { Config, TranscriptSegment, TranscriptWord, TranscriptionRequestOptions } from '../types/index.js'
 import { groqTranscriptAudio } from './groq.js'
 import { openaiTranscriptAudio } from './openai.js'
-import { getFileSize, bytesToMB } from '../utils/fileHelpers.js'
+import { getFileSize, bytesToMB, getSafeBaseName } from '../utils/fileHelpers.js'
 import { splitAudioIntoChunks, deleteDirectory, getAudioDuration } from '../utils/ffmpegOperations.js'
 
 /** Largest audio file sent to a provider in a single request; bigger files are split into chunks */
@@ -177,7 +177,7 @@ export async function transcribeAudio(
  * Saves transcription to file
  */
 export function saveTranscription(audioPath: string, transcription: string): string {
-  const outputFileName = path.basename(audioPath, path.extname(audioPath)) + '.txt'
+  const outputFileName = getSafeBaseName(audioPath) + '.txt'
   const outputPath = path.join(path.dirname(audioPath), outputFileName)
   
   fs.writeFileSync(outputPath, transcription, 'utf-8')

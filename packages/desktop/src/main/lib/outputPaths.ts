@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
-import { getStoredConfig } from 'mediacript'
+import { getSafeBaseName, getStoredConfig, limitFileNameLength } from 'mediacript'
 
 /**
  * Every file the app generates lands under one predictable root, split by the
@@ -59,6 +59,7 @@ export function createRunStamp(date = new Date()): string {
 }
 
 function uniquePath(dir: string, baseName: string, extWithDot: string): string {
+  baseName = limitFileNameLength(baseName, 180 - Buffer.byteLength(extWithDot, 'utf8') - 5)
   let candidate = path.join(dir, `${baseName}${extWithDot}`)
   if (!fs.existsSync(candidate)) return candidate
 
@@ -101,7 +102,10 @@ function moveFile(from: string, to: string): void {
 export function moveOutputInto(producedPath: string, dir: string, stamp?: string): string {
   const name = path.basename(producedPath)
   const ext = path.extname(name)
-  const baseName = stamp && !STAMP_PATTERN.test(name) ? `${stamp}_${path.basename(name, ext)}` : path.basename(name, ext)
+  // Produced names can already be long (`<source>_converted`), and the stamp adds 20 more —
+  // cap the stem so the final name stays well inside the 255 limit incl. `_N` and extension.
+  const rawBase = stamp && !STAMP_PATTERN.test(name) ? `${stamp}_${path.basename(name, ext)}` : path.basename(name, ext)
+  const baseName = limitFileNameLength(rawBase, 180 - Buffer.byteLength(ext, 'utf8') - 5)
 
   const target = path.join(dir, `${baseName}${ext}`)
   if (target === producedPath) return producedPath
@@ -119,7 +123,7 @@ export function moveOutputInto(producedPath: string, dir: string, stamp?: string
  * `<root>/Highlights/2026-09-09_14-32-05_video/`.
  */
 export function createRunOutputDir(feature: OutputFeature, sourcePath: string, stamp: string): string {
-  const sourceName = path.basename(sourcePath, path.extname(sourcePath))
+  const sourceName = getSafeBaseName(sourcePath)
   const dir = path.join(getFeatureOutputDir(feature), `${stamp}_${sourceName}`)
   fs.mkdirSync(dir, { recursive: true })
   return dir
@@ -143,7 +147,7 @@ function listEntries(dir: string): fs.Dirent[] {
  * way they were when outputs lived next to the source, hence this lookup.
  */
 export function findPreviousOutput(dirs: string[], sourcePath: string, suffix: string): string | undefined {
-  const sourceName = path.basename(sourcePath, path.extname(sourcePath))
+  const sourceName = getSafeBaseName(sourcePath)
   const exactName = `${sourceName}${suffix}`
   const stampedSuffix = `_${exactName}`
 
@@ -168,7 +172,7 @@ export function findPreviousRunDir(
   exclude?: string
 ): string | undefined {
   const featureDir = getFeatureOutputDir(feature)
-  const sourceName = path.basename(sourcePath, path.extname(sourcePath))
+  const sourceName = getSafeBaseName(sourcePath)
   const stampedSuffix = `_${sourceName}`
 
   const matches = listEntries(featureDir)

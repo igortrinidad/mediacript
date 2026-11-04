@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { getStoredConfig, transcribeAudioFile } from 'mediacript'
+import { getSafeBaseName, getStoredConfig, transcribeAudioFile } from 'mediacript'
 import { toTranscriptionAudio } from './meetingAudio'
 import type { TranscriptionEngine, TranscriptionEngineUsed } from '../../shared/types'
 
@@ -177,7 +177,7 @@ async function transcribeWithGemini(apiKey: string, videoPath: string): Promise<
 
 /** The pre-POC pipeline: ffmpeg to a small mp3, then mediacript's Whisper helper (which also chunks). */
 async function transcribeLocally(videoPath: string, workDir: string, onLog?: (text: string) => void): Promise<string> {
-  const mp3Path = path.join(workDir, `${path.basename(videoPath, path.extname(videoPath))}_audio.mp3`)
+  const mp3Path = path.join(workDir, `${getSafeBaseName(videoPath)}_audio.mp3`)
   try {
     const mp3 = await toTranscriptionAudio(videoPath, mp3Path, onLog)
     const result = await transcribeAudioFile(mp3)

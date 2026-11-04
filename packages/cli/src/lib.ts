@@ -155,6 +155,9 @@ export type { TranscriptWord, WordTranscriptionOptions, WordTranscriptionResult,
 // steps (e.g. a GUI wanting fine-grained per-step progress instead of generateSubtitles)
 export { saveSrtFile, getSrtOutputPath, loadSrtFile }
 
+// Filename-length guards so every consumer derives output names the same, filesystem-safe way
+export { getSafeBaseName, limitFileNameLength } from './utils/fileHelpers.js'
+
 // Re-export for consumers (CLI, desktop app) that orchestrate their own steps
 // and need to resolve/create the same per-file output folder used internally
 export { createOutputFolderForFile }

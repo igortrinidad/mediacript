@@ -17,6 +17,7 @@ import { loadConfigWithEnv } from '../config/index.js'
 import { transcribeMediaWithWords } from '../transcript/words.js'
 import { transcribeAudioWithSegments } from '../transcript/index.js'
 import { extractTranscriptionAudio } from '../utils/ffmpegOperations.js'
+import { getSafeBaseName } from '../utils/fileHelpers.js'
 
 /** Distinct so callers can ask the user for a key instead of treating it as a transient failure */
 export const EXIT_NO_KEY = 3
@@ -123,7 +124,7 @@ export async function runTranscribeCommand(argv: string[]): Promise<void> {
     payload = { file, engine: 'mediacript', elapsedSec: (Date.now() - startedAt) / 1000, ...result }
   } else {
     // Same lean audio the --words path uses, then the regular segment-level flow
-    const tmpAudio = path.join(path.dirname(file), `.${path.basename(file, path.extname(file))}_transcribe_tmp.mp3`)
+    const tmpAudio = path.join(path.dirname(file), `.${getSafeBaseName(file)}_transcribe_tmp.mp3`)
     try {
       await extractTranscriptionAudio(file, tmpAudio)
       const result = await transcribeAudioWithSegments(tmpAudio, config)
